@@ -131,7 +131,7 @@ export function NavbarDemo() {
           </MobileNavMenu>
         </MobileNav>
       </Navbar>
-      <DummyContent />
+      {/* <DummyContent /> */}
 
       {/* Navbar */}
     </div>

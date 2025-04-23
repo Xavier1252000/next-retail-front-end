@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Dashboard from "@/components/dashboard/dashboard";
 import Sidebar from "@/components/side_bar/Sidebar";
 import React from "react";
+import DashboardCards from "@/components/dashboard/dashboard-cards";
 
 const Page = () => {
   const [token, setToken] = useState<string | null>(null);
@@ -19,12 +20,11 @@ const Page = () => {
     }
   }, []);
 
-  if (!token || !userId) return <div><Dashboard /></div>;
+  if (!token || !userId) return <div><Dashboard />
+  <DashboardCards /> </div>;
 
   return (
-    <>
-      <Sidebar />
-      
+    <>      
     </>
   );
 };

@@ -105,10 +105,12 @@
 
 // ------------------------------------------------
 
+// components/side_bar/Sidebar.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePermissions } from "./use-permissions";
 import { useAuth } from "@/context/authContext";
 import {
@@ -118,6 +120,7 @@ import {
   Menu,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSidebar } from "@/context/sidebar-context"; // ✅ use the global context
 
 interface SubModule {
   name: string;
@@ -133,12 +136,13 @@ interface HeadModule {
 }
 
 const Sidebar = () => {
+  const { isOpen: isSidebarOpen, toggle } = useSidebar(); // ✅ use global state
   const { response, loading } = usePermissions();
   const [userPermissions, setUserPermissions] = useState<HeadModule[]>([]);
   const [openModules, setOpenModules] = useState<{ [key: string]: boolean }>(
     {}
   );
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const { isLoggedIn } = useAuth();
 
   useEffect(() => {
@@ -157,7 +161,7 @@ const Sidebar = () => {
     }
   }, [loading, response]);
 
-  if (!isLoggedIn) return <></>;
+  if (!isLoggedIn) return (<></>);
   if (loading) return <div>Loading...</div>;
 
   const toggleModule = (moduleTo: string) => {
@@ -171,7 +175,7 @@ const Sidebar = () => {
     <div className="fixed top-5 left-0 h-screen z-40">
       {/* Sidebar Toggle Button */}
       <button
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        onClick={toggle} // ✅ global toggle
         className="absolute top-4 left-4 z-50 p-2 bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 rounded-lg shadow-sm transition"
       >
         <Menu size={20} />
@@ -207,7 +211,17 @@ const Sidebar = () => {
                     href={module.to}
                     className="flex items-center gap-2 w-full"
                   >
-                    <LayoutDashboard className="w-5 h-5 text-indigo-500" />
+                    {module.icon ? (
+                      <Image
+                        src={module.icon}
+                        alt={`${module.name} icon`}
+                        width={20}
+                        height={20}
+                        className="min-w-[20px] min-h-[20px]"
+                      />
+                    ) : (
+                      <LayoutDashboard className="w-5 h-5 text-indigo-500" />
+                    )}
                     {isSidebarOpen && <span>{module.name}</span>}
                   </Link>
 
@@ -260,3 +274,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+

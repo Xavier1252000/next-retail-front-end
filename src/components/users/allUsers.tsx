@@ -1,8 +1,13 @@
 'use client';
 import React from 'react';
 import { useAllUsers } from './useAllUsers'; // Adjust path as needed
+import { useRouter } from 'next/navigation';
 
 const AllUsersPage: React.FC = () => {
+  const router = useRouter();
+
+ 
+
   const {
     formData,
     users,
@@ -11,8 +16,31 @@ const AllUsersPage: React.FC = () => {
     isSubmitting,
   } = useAllUsers();
 
+  const handleAddNewUser = () =>{
+    router.push("/addUser")
+  }
+
   return (
+
+    
     <div className="p-4">
+      <div className="relative p-4">
+      {/* Button positioned in top right */}
+      <button
+      onClick={handleAddNewUser}
+        className="absolute top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+      >
+        Add New User
+      </button>
+
+      {/* Rest of your page content */}
+      <div className="mt-20">
+        {/* Your user table, content, etc */}
+        <h1 className="text-2xl font-bold">User Management</h1>
+      </div>
+    </div>
+
+
       <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 mb-6 items-end">
         <input
           type="number"

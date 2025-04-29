@@ -67,26 +67,25 @@ export function NavbarDemo() {
 
   return (
     <div className="relative w-full">
-      <Navbar>
-        {/* Desktop Navigation */}
-        <NavBody>
-          <NavbarLogo />
-          <NavItems items={navItems} />
-          <div className="flex items-center gap-4">
-          {!isLoggedIn ? (
-              <>
-                <NavbarButton variant="secondary" onClick={handleLogin}>Login</NavbarButton>
-                <NavbarButton variant="primary">Book a call</NavbarButton>
-              </>
-            ) : (
-              <>
-                <NavbarButton >Profile</NavbarButton>
-                <NavbarButton >Settings</NavbarButton>
-                <NavbarButton onClick={handleLogout}>Logout</NavbarButton>
-              </>
-            )}
-          </div>
-        </NavBody>
+  <Navbar className="bg-purple-500 shadow-sm border-b border-slate-200">
+    <NavBody>
+      <NavbarLogo />
+      <NavItems items={navItems} />
+      <div className="flex items-center gap-4">
+        {!isLoggedIn ? (
+          <>
+            <NavbarButton variant="secondary" onClick={handleLogin}>Login</NavbarButton>
+            <NavbarButton variant="primary">Book a call</NavbarButton>
+          </>
+        ) : (
+          <>
+            <NavbarButton>Profile</NavbarButton>
+            <NavbarButton>Settings</NavbarButton>
+            <NavbarButton onClick={handleLogout}>Logout</NavbarButton>
+          </>
+        )}
+      </div>
+    </NavBody>
 
         {/* Mobile Navigation */}
         <MobileNav>

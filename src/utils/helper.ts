@@ -1,4 +1,4 @@
-import Cookies from "js-cookie";
+import Cookies from "js-cookie"
 
 export const getCookieValue = (cookieName: string): string | null => {
     if (typeof document === "undefined") {
@@ -31,3 +31,12 @@ export const clearCookies = () =>{
       Cookies.remove(cookieName);
       });
 }
+
+export const toISOStringOrNull = (date?: string | null): string | null => {
+    if (!date) return null;
+    try {
+      return new Date(date).toISOString();
+    } catch {
+      return null;
+    }
+  };

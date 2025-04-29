@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard"];
-const publicRoutes = ["/"];
+const protectedRoutes = ["/dashboard", "/all-users", "/addItem", ];
+const publicRoutes = ["/login"];
 
 export default async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;

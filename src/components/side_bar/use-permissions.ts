@@ -2,8 +2,9 @@ import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
+import { useRouter } from "next/router";
 
-export const usePermissions = () =>{
+export const usePermissions = () => {
     const { showToast } = useToast();
     const [response, setResponse] = useState<any>(null);
     const [status, setStatus] = useState<number | null>(null);
@@ -12,42 +13,37 @@ export const usePermissions = () =>{
 
     useEffect(() => {
         let userId = Cookies.get("userId"); // ✅ Read userId from cookies
-    
-        // if (!userId) {
-        //   showToast("Missing authentication data", "error");
-        //   setLoading(false)
-        //   return;
-        // }
 
         const fetchPermissions = async () => {
             const payload = {
-                data:{
+                data: {
                     userId: userId
                 }
             };
 
             try {
-                const {response, status} = await BackendRequest("/api/permissions",
-                    {method : "POST",
+                const { response, status } = await BackendRequest("/api/permissions",
+                    {
+                        method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify(payload),
                     });
 
-                    setResponse(response);
-                    setStatus(status);
-                
+                setResponse(response);
+                setStatus(status);
+
             } catch (error) {
                 showToast("Failed to fetch permissions", "error");
                 setStatus(500);
-            }finally{
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchPermissions();
     }, []);
-    return {response, status, loading}
+    return { response, status, loading }
 }
 

@@ -1,16 +1,13 @@
 import axios from "axios";
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-export async function POST(request:Request) {
+export async function GET(){
     const token = (await cookies()).get("authToken")?.value;
-    const requestBody = await request.json();
-
+    
     try {
-        const response = await axios.post(`${BACKEND_URL}/user/get-all-users`,
-            requestBody,
+        const response = await axios.get(`${BACKEND_URL}/master/get-all-country-masters`,
             {
                 headers:{
                     "Content-Type": "application/json",
@@ -18,8 +15,10 @@ export async function POST(request:Request) {
                 }
             }
         )
-        return NextResponse.json(response.data, {status: response.status})
-    } catch (error:unknown) {
+
+        return NextResponse.json(response.data, {status: response.status});
+        
+    } catch (error:any) {
         console.log("error in calling confidential/all-users" , error);
         if (axios.isAxiosError(error)) {
             console.error("API call error:", error.response?.data);
@@ -35,5 +34,6 @@ export async function POST(request:Request) {
                 { status: 500 }
             );
         }
+        
     }
 }

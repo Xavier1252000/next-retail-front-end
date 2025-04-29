@@ -13,7 +13,6 @@ const Page = () => {
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     const userId = localStorage.getItem("userId");
-    console.log(token);
     if (token && userId) {
       setToken(token);
       setUserId(userId);

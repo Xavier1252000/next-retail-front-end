@@ -3,13 +3,12 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-export async function POST(request:Request) {
+export async function POST(request: NextRequest){
     const token = (await cookies()).get("authToken")?.value;
     const requestBody = await request.json();
-
+    
     try {
-        const response = await axios.post(`${BACKEND_URL}/user/get-all-users`,
+        const response = await axios.post(`${BACKEND_URL}/user/register-user-with-custom-roles`,
             requestBody,
             {
                 headers:{
@@ -18,9 +17,11 @@ export async function POST(request:Request) {
                 }
             }
         )
-        return NextResponse.json(response.data, {status: response.status})
-    } catch (error:unknown) {
-        console.log("error in calling confidential/all-users" , error);
+
+        return NextResponse.json(response.data, {status: response.status});
+        
+    } catch (error:any) {
+        console.log("error in calling /user/register-user-with-custom-roles" , error);
         if (axios.isAxiosError(error)) {
             console.error("API call error:", error.response?.data);
             return NextResponse.json(
@@ -35,5 +36,6 @@ export async function POST(request:Request) {
                 { status: 500 }
             );
         }
+        
     }
 }

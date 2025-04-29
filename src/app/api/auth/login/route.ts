@@ -18,9 +18,12 @@ export async function POST(request: Request) {
         );
         const token = response.data.response.data.token;
         const userId = response.data.response.data.user.id;
+        const roles = response.data.response.data.user.roles;
+
         let cookieStore = cookies();
         (await cookieStore).set("authToken", token, {});
-        (await cookieStore).set("userId", userId, {})
+        (await cookieStore).set("userId", userId, {});
+        (await cookieStore).set("userRoles", JSON.stringify(roles), {})
         
         return NextResponse.json(response.data, { status: response.status });
     } catch (error: unknown) {

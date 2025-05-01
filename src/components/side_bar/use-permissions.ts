@@ -22,7 +22,7 @@ export const usePermissions = () => {
             };
 
             try {
-                const { response, status } = await BackendRequest("/api/permissions",
+                const { response, status } = await BackendRequest("/api/permissions/getUserPermissions",
                     {
                         method: "POST",
                         headers: {

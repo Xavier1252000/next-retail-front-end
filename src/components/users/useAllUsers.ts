@@ -4,7 +4,7 @@ import { useToast } from '@/context/toast-context';
 import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
 import { useEffect, useState } from 'react';
 
-interface UserData {
+export interface UserData {
   id: string;
   firstName: string;
   lastName: string;

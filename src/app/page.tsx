@@ -1,4 +1,5 @@
 import { AuroraBackgroundDemo } from "@/components/aurora-background";
+import Footer from "@/components/footer/footer";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

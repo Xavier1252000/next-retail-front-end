@@ -5,14 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePermissions } from "./use-permissions";
 import { useAuth } from "@/context/authContext";
-import {
-  LayoutDashboard,
-  ChevronRight,
-  ChevronDown,
-  Menu,
-} from "lucide-react";
+import { LayoutDashboard, ChevronRight, ChevronDown, Menu } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useSidebar } from "@/context/sidebar-context"; // ✅ use the global context
+import { useSidebar } from "@/context/sidebar-context";
 import { useRouter } from "next/navigation";
 
 interface SubModule {
@@ -28,15 +23,12 @@ interface HeadModule {
   subModules: SubModule[];
 }
 
-const Sidebar = () => {
-  const { isOpen: isSidebarOpen, toggle } = useSidebar(); // ✅ use global state
+export default function Sidebar() {
+  const { isOpen: isSidebarOpen, toggle } = useSidebar();
   const { response, loading } = usePermissions();
   const [userPermissions, setUserPermissions] = useState<HeadModule[]>([]);
-  const [openModules, setOpenModules] = useState<{ [key: string]: boolean }>(
-    {}
-  );
+  const [openModules, setOpenModules] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
-
   const { isLoggedIn } = useAuth();
 
   useEffect(() => {
@@ -55,7 +47,13 @@ const Sidebar = () => {
     }
   }, [loading, response]);
 
-  if (!isLoggedIn) return (router.push("/login"));
+  useEffect(() => {
+    if (!isLoggedIn) {
+      router.push("/login");
+    }
+  }, [isLoggedIn]);
+
+  if (!isLoggedIn) return null;
   if (loading) return <div>Loading...</div>;
 
   const toggleModule = (moduleTo: string) => {
@@ -66,10 +64,10 @@ const Sidebar = () => {
   };
 
   return (
-    <div className="fixed top-5 left-0 h-screen z-40">
+    <div className="fixed top-13 left-0 h-[calc(100vh-64px)] z-40">
       {/* Sidebar Toggle Button */}
       <button
-        onClick={toggle} // ✅ global toggle
+        onClick={toggle}
         className="absolute top-4 left-4 z-50 p-2 bg-white hover:bg-gray-100 border border-gray-300 text-gray-800 rounded-lg shadow-sm transition"
       >
         <Menu size={20} />
@@ -165,7 +163,4 @@ const Sidebar = () => {
       </div>
     </div>
   );
-};
-
-export default Sidebar;
-
+}

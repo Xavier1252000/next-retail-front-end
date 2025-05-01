@@ -1,7 +1,9 @@
 'use client';
 import React from 'react';
-import { useAllUsers } from './useAllUsers'; // Adjust path as needed
+import { useAllUsers, UserData } from './useAllUsers'; // Adjust path as needed
 import { useRouter } from 'next/navigation';
+import { Button } from '../ui/button';
+import { UserFormData } from './useAddUser';
 
 const AllUsersPage: React.FC = () => {
   const router = useRouter();
@@ -20,6 +22,10 @@ const AllUsersPage: React.FC = () => {
     router.push("/addUser")
   }
 
+  function handleManageUser(user: UserData):void {
+    router.push(`all-users/manage-user/${user.id}`)
+  }
+
   return (
 
     
@@ -28,7 +34,7 @@ const AllUsersPage: React.FC = () => {
       {/* Button positioned in top right */}
       <button
       onClick={handleAddNewUser}
-        className="absolute top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+        className="absolute top-6 right-4 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
       >
         Add New User
       </button>
@@ -36,7 +42,7 @@ const AllUsersPage: React.FC = () => {
       {/* Rest of your page content */}
       <div className="mt-20">
         {/* Your user table, content, etc */}
-        <h1 className="text-2xl font-bold">User Management</h1>
+        <h1 className="text-2xl font-bold">All Users</h1>
       </div>
     </div>
 
@@ -98,7 +104,7 @@ const AllUsersPage: React.FC = () => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-700"
         >
           {isSubmitting ? 'Filtering...' : 'Filter'}
         </button>
@@ -121,7 +127,7 @@ const AllUsersPage: React.FC = () => {
         <tbody>
           {users.length > 0 ? (
             users.map(user => (
-              <tr key={user.id}>
+              <tr key={user.id} onClick={() => handleManageUser(user)}>
                 <td className="border px-4 py-2">{user.firstName}</td>
                 <td className="border px-4 py-2">{user.lastName}</td>
                 <td className="border px-4 py-2">{user.username}</td>

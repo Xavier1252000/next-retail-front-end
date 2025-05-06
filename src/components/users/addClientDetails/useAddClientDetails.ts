@@ -145,9 +145,10 @@ export const useAddClientDetails = (
         body: JSON.stringify({ data: formData }),
       });
 
-      if (status === 201) {
+      if (status === 201 || status === 200) {
         showToast(response?.response?.message || "Client details saved successfully!");
-        router.push(`/all-users`);
+        const clientId = response.response.data.userId;
+        router.push(`/all-users/clients/addStore/${clientId}`);
       } else {
         showToast(response?.response?.message || "Failed to save client details.");
       }

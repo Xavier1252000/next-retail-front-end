@@ -2,8 +2,9 @@ import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { KeyboardEvent, useEffect, useState } from "react";
 import { toISOStringOrNull } from "@/utils/helper";
+
 export interface FormDataType {
-  storeId: string | "680cc4cf0041f117f34e290b";
+  storeId: string;
   itemName: string | null;
   costPrice: number | null;
   profitToGainInPercentage: number | null;
@@ -68,9 +69,8 @@ export interface AddItemResponseType {
 }
 
 export const UseAddItems = () => {
-
   const [formData, setFormData] = useState<FormDataType>({
-    storeId: "680cc4cf0041f117f34e290b", // Keep as is, since it's hardcoded
+    storeId: "680cc4cf0041f117f34e290b",
     itemName: null,
     costPrice: null,
     profitToGainInPercentage: null,
@@ -99,35 +99,40 @@ export const UseAddItems = () => {
 
   const [addedItem, setAddedItem] = useState<AddItemResponseType | undefined>();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [taxOptions, setTaxOptions] = useState([]);
+  const [discountOptions, setDiscountOptions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [supplierOptions, setSupplierOptions] = useState([]);
+  const [storeId, setStoreId] = useState();
   const { showToast } = useToast();
 
+  useEffect(() => {
+    const fetchOptions = async () => {
+
+      
+      try {
+        const [taxRes, discountRes, categoryRes, supplierRes] = await Promise.all([
+          BackendRequest("api/inventoryManagement/getAllTaxes", { method: "GET" }),
+          BackendRequest("api/inventoryManagement/getAllDiscounts", { method: "GET" }),
+          BackendRequest("api/inventoryManagement/getAllCategories", { method: "GET" }),
+          BackendRequest("api/inventoryManagement/getAllSuppliers", { method: "GET" }),
+        ]);
+
+        setTaxOptions(taxRes.response.data || []);
+        setDiscountOptions(discountRes.response.data || []);
+        setCategoryOptions(categoryRes.response.data || []);
+        setSupplierOptions(supplierRes.response.data || []);
+      } catch (error) {
+        showToast("Failed to fetch dropdown options");
+      }
+    };
+
+    fetchOptions();
+  }, []);
+
   const addItem = async (item: FormDataType = formData) => {
-    item.storeId = "680cc4cf0041f117f34e290b";
     const payload = {
-      storeId: item.storeId,
-      itemName: item.itemName,
-      costPrice: item.costPrice,
-      profitToGainInPercentage: item.profitToGainInPercentage,
-      baseSellingPrice: item.baseSellingPrice,
-      additionalPrice: item.additionalPrice,
-      applicableTaxes: item.applicableTaxes,
-      discountMasterIds: item.discountMasterIds,
-      brand: item.brand,
-      categoryIds: item.categoryIds,
-      supplierId: item.supplierId,
-      description: item.description,
-      itemImageInfoIds: item.itemImageInfoIds,
-      itemStock: item.itemStock,
-      stockThreshold: item.stockThreshold,
-      tutorialLinks: item.tutorialLinks,
-      skuCode: item.skuCode,
-      barcode: item.barcode,
-      stockUnit: item.stockUnit,
-      isReturnable: item.isReturnable,
-      isWarrantyAvailable: item.isWarrantyAvailable,
-      warrantyPeriodYears: item.warrantyPeriodYears,
-      warrantyPeriodMonths: item.warrantyPeriodMonths,
-      warrantyPeriodDays: item.warrantyPeriodDays,
+      ...item,
       expiryDate: toISOStringOrNull(item.expiryDate),
     };
 
@@ -141,11 +146,12 @@ export const UseAddItems = () => {
 
       if (status === 201) {
         setAddedItem(response?.response?.data || null);
+        showToast("Item added successfully");
       } else {
-        showToast(response.response.message);
+        showToast(response.response.message || "Failed to add item");
       }
-    } catch (error) {
-      showToast("Something went wrong!!!");
+    } catch {
+      showToast("Something went wrong!");
     } finally {
       setIsSubmitting(false);
     }
@@ -160,22 +166,14 @@ export const UseAddItems = () => {
 
     if (target instanceof HTMLInputElement) {
       const { type, value, checked, files, multiple } = target;
-
-      if (type === "checkbox") {
-        newValue = checked;
-      } else if (type === "number") {
-        newValue = value ? Number(value) : null;
-      } else if (type === "file") {
-        newValue = multiple ? Array.from(files || []) : files?.[0] || null;
-      } else {
-        newValue = value || null;
-      }
+      if (type === "checkbox") newValue = checked;
+      else if (type === "number") newValue = value ? Number(value) : null;
+      else if (type === "file") newValue = multiple ? Array.from(files || []) : files?.[0] || null;
+      else newValue = value || null;
     } else if (target instanceof HTMLSelectElement) {
-      if (target.multiple) {
-        newValue = Array.from(target.selectedOptions).map((opt) => opt.value);
-      } else {
-        newValue = target.value || null;
-      }
+      newValue = target.multiple
+        ? Array.from(target.selectedOptions).map((opt) => opt.value)
+        : target.value || null;
     } else if (target instanceof HTMLTextAreaElement) {
       newValue = target.value || null;
     }
@@ -192,37 +190,14 @@ export const UseAddItems = () => {
   };
 
   const preventInvalidNumberInput = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.type === "keydown") {
-      const keyEvent = e as KeyboardEvent<HTMLInputElement>;
-      const allowedKeys = [
-        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-        "Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab","."
-      ];
-      if (!allowedKeys.includes(keyEvent.key)) {
-        keyEvent.preventDefault();
-      }
-    } else if (e.type === "input") {
-      const inputEvent = e as React.FormEvent<HTMLInputElement>;
-      const target = inputEvent.target as HTMLInputElement;
-      const originalValue = target.value;
-      // Remove any non-numeric characters
-      target.value = originalValue.replace(/[^0-9]/g, "");
-      // Trigger onChange if the value was modified
-      if (target.value !== originalValue) {
-        const changeEvent = new Event("change", { bubbles: true });
-        target.dispatchEvent(changeEvent);
-      }
+    const allowedKeys = [
+      "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+      "Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "."
+    ];
+    if (!allowedKeys.includes(e.key)) {
+      e.preventDefault();
     }
   };
-
-  // const router = useRouter();
-  // useEffect(() => {
-  //   const checkAuth = async () => {
-  //     const token = Cookies.get("authToken");
-  //     if (!token) await router.push("/login");
-  //   };
-  //   checkAuth();
-  // }, [router]);
 
   return {
     addedItem,
@@ -231,5 +206,9 @@ export const UseAddItems = () => {
     handleSubmit,
     isSubmitting,
     preventInvalidNumberInput,
+    taxOptions,
+    discountOptions,
+    categoryOptions,
+    supplierOptions,
   };
 };

@@ -190,10 +190,13 @@ export const useAddUserPermissions = (userId: string) => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
+    const modulePermissions = userModulesPermissions.filter((mp) => mp.permissionIds.length !== 0);
+    console.log(modulePermissions)
+
     const payload = {
       data: {
         userId: userId,
-        modulesPermissions: userModulesPermissions,
+        modulesPermissions: modulePermissions,
       },
     };
 

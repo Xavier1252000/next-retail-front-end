@@ -65,7 +65,7 @@ const AddUserPermission: React.FC<AddUserPermissionProps> = ({ userId }) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-xl">
+    <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-xl mt-13">
       <h2 className="text-3xl font-bold text-purple-700 mb-8">
         Manage User Permissions
       </h2>

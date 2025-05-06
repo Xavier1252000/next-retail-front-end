@@ -1,0 +1,66 @@
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
+
+export type Item = {
+  id: string;
+  itemName: string;
+  finalPrice: number;
+  itemStock: number;
+  skuCode: string;
+};
+
+interface UseAllItemsProps {
+  storeId: string;
+  itemPerIndex?: number;
+}
+
+export function useAllItems({ storeId}: UseAllItemsProps) {
+  const [items, setItems] = useState<Item[]>([]);
+  const [index, setIndex] = useState(0);
+  const[itemPerIndex, setItemPerIndex] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const fetchItems = async () => {
+    console.log(storeId, index, itemPerIndex)
+    setLoading(true);
+    const payload = {
+        data:{
+        storeId,
+        index,
+        itemPerIndex:100
+        }
+    }
+    
+    try {
+      const {response, status} = await BackendRequest("/api/inventoryManagement/allItems", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      
+      const resData = response?.response?.data;
+      setItems(resData.items);
+      setTotalPages(resData.totalPages);
+    } catch (err) {
+      console.error('Error fetching items:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, [storeId, index, itemPerIndex]);
+
+  return {
+    items,
+    index,
+    itemPerIndex,
+    totalPages,
+    loading,
+    setIndex,
+    setItemPerIndex
+  }
+};

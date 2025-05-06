@@ -1,4 +1,4 @@
-import AddItemForm from '@/components/inventoryManagement/addItem'
+import AddItemForm from '@/components/inventoryManagement/addItem/addItem'
 import React from 'react'
 
 function addItems() {

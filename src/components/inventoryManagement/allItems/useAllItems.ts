@@ -8,6 +8,33 @@ export type Item = {
   finalPrice: number;
   itemStock: number;
   skuCode: string;
+  stockThreshold: number;
+  stockUnit: string;
+  isReturnable: boolean;
+  createdOn: string;
+  modifiedOn: string;
+  createdBy: string;
+  modifiedBy: string;
+  active: boolean;
+  storeId: string;
+  profitToGainInPercentage: number;
+  baseSellingPrice: number;
+  additionalPrice: number;
+  applicableTaxes: [];
+  totalTaxPrice: number;
+  discountMasterIds: [];
+  totalDiscountPrice: number;
+  profitMargin: number;
+  markupPercentage: number;
+  brand: string;
+  categoryIds: [];
+  description: string;
+  itemImageInfoIds: [];
+  barcode: string;
+  thresholdQuantityForAddTax: number;
+  isWarrantyAvailable: boolean;
+  warrantyPeriod : string;
+  expiryDate: string;
 };
 
 interface UseAllItemsProps {

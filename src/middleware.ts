@@ -9,7 +9,7 @@ export default async function middleware(request: NextRequest) {
         path.startsWith(route)
     );
     const isPublicRoute = publicRoutes.includes(path);
-    const token = request.cookies.get("access_token");
+    const token = request.cookies.get("authToken");
     if (isProtectedRoute && !token) {
         return NextResponse.redirect(new URL("/", request.nextUrl));
     }

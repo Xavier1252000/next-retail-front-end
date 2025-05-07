@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAllItems } from './useAllItems';
+import { useRouter } from 'next/navigation';
 
 interface AllItemsProps {
   storeId: string;
@@ -10,6 +11,7 @@ interface AllItemsProps {
 const AllItems: React.FC<AllItemsProps> = ({ storeId }) => {
   const [indexInput, setIndexInput] = useState(1);
   const [itemPerIndexInput, setItemPerIndexInput] = useState(100);
+  const router = useRouter();
 
   const {
     items,
@@ -54,12 +56,17 @@ const AllItems: React.FC<AllItemsProps> = ({ storeId }) => {
     }
   };
 
+  const addNewItem = () =>{
+    router.push("/inventoryManagement/addItem");
+  }
+
   return (
     <div className="relative p-4 rounded-lg bg-white text-purple-900 mt-13">
 
         <button className="absolute top-6 right-4 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+        onClick={addNewItem}
       >
-        Add New User
+        Add New Item
       </button>
 
       <h2 className="text-2xl font-bold mb-4 text-purple-800">
@@ -93,20 +100,28 @@ const AllItems: React.FC<AllItemsProps> = ({ storeId }) => {
       <table className="w-full borde border-gray-300 text-black">
   <thead className="bg-purple-200">
     <tr>
+    <th className="border px-4 py-2">SKU</th>
       <th className="border px-4 py-2">Item Name</th>
-      <th className="border px-4 py-2">SKU</th>
+      <th className="border px-4 py-2">Threshold</th>
+      <th className="border px-4 py-2">Stock Unit</th>
       <th className="border px-4 py-2">Stock</th>
       <th className="border px-4 py-2">Final Price (₹)</th>
+      <th className="border px-4 py-2">warrenty Avilable</th>
+      <th className="border px-4 py-2">Warrenty</th>
     </tr>
   </thead>
   <tbody>
     {items.length > 0 ? (
       items.map(item => (
         <tr key={item.id}>
+            <td className="border px-4 py-2">{item.skuCode}</td>
           <td className="border px-4 py-2">{item.itemName}</td>
-          <td className="border px-4 py-2">{item.skuCode}</td>
+          <td className="border px-4 py-2">{item.stockThreshold}</td>
+          <td className="border px-4 py-2">{item.stockUnit}</td>
           <td className="border px-4 py-2">{item.itemStock}</td>
           <td className="border px-4 py-2">₹{item.finalPrice}</td>
+          <td className="border px-4 py-2">{item.isWarrantyAvailable}</td>
+          <td className="border px-4 py-2">{item.warrantyPeriod}</td>
         </tr>
       ))
     ) : (

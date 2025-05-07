@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useToast } from "@/context/toast-context";
-import { bakeCookie } from "@/utils/helper";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext";
@@ -36,7 +35,6 @@ export const useLogin = () => {
             body: JSON.stringify(formData),
         });
         if(status === 200){
-            // localStorage.setItem("authToken", response.response.data.token);
             localStorage.setItem("userId", response.response.data.user.id);
             setIsLoggedIn(true);
         }
@@ -44,11 +42,11 @@ export const useLogin = () => {
         setIsSubmitting(false);
         if (status === 200 && response?.response?.statusCode === 200) {
             showToast("Login success", "success");
-            bakeCookie(
-                "access_token",
-                response?.response?.data?.token,
-                new Date(response?.response?.data?.expirationDate).toUTCString()
-            );
+            // bakeCookie(
+            //     "access_token",
+            //     response?.response?.data?.token,
+            //     new Date(response?.response?.data?.expirationDate).toUTCString()
+            // );
             router.push("/dashboard");
         } else {
             showToast("Invalid Credentials", "error");

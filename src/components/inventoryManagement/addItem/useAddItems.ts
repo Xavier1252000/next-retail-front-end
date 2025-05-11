@@ -31,41 +31,22 @@ export interface FormDataType {
   expiryDate: string | null;
 }
 
-export interface AddItemResponseType {
+interface TaxMaster {
+  id: string;
   createdOn: string;
   modifiedOn: string;
-  createdBy: string | null;
-  modifiedBy: string | null;
+  createdBy: string;
+  modifiedBy: string;
   active: boolean;
-  id: string;
-  storeId: string | null;
-  itemName: string;
-  costPrice: number;
-  profitToGainInPercentage: number;
-  baseSellingPrice: number;
-  additionalPrice: number;
-  applicableTaxes: string[];
-  totalTaxPrice: number;
-  discountMasterIds: string[];
-  totalDiscountPrice: number | null;
-  finalPrice: number;
-  profitMargin: number;
-  markupPercentage: number;
-  brand: string;
-  categoryIds: string[];
-  supplierId: string;
+  storeIds: string[];
+  taxCode: string;
+  taxType: string;
+  taxPercentage: number;
+  applicableOn: string;
+  applicableStateIds: string[];
+  applicableCategories: string[];
+  inclusionOnBasePrice: boolean;
   description: string;
-  itemImageInfoIds: string[];
-  itemStock: number;
-  stockThreshold: number;
-  tutorialLinks: string[];
-  skuCode: string;
-  barcode: string;
-  stockUnit: string;
-  isReturnable: boolean;
-  isWarrantyAvailable: boolean;
-  warrantyPeriod: string;
-  expiryDate: string;
 }
 
 export const UseAddItems = () => {
@@ -97,43 +78,45 @@ export const UseAddItems = () => {
     expiryDate: null,
   });
 
-  const [addedItem, setAddedItem] = useState<AddItemResponseType | undefined>();
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [taxOptions, setTaxOptions] = useState([]);
+  const [addedItem, setAddedItem] = useState<any>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taxOptions, setTaxOptions] = useState<TaxMaster[]>([]);
   const [discountOptions, setDiscountOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [supplierOptions, setSupplierOptions] = useState([]);
-  const [storeId, setStoreId] = useState();
   const { showToast } = useToast();
 
   useEffect(() => {
     const fetchOptions = async () => {
-
-      
       try {
-        const [taxRes, discountRes, categoryRes, supplierRes] = await Promise.all([
-          BackendRequest("api/inventoryManagement/getAllTaxes", { method: "GET" }),
-          BackendRequest("api/inventoryManagement/getAllDiscounts", { method: "GET" }),
-          BackendRequest("api/inventoryManagement/getAllCategories", { method: "GET" }),
-          BackendRequest("api/inventoryManagement/getAllSuppliers", { method: "GET" }),
-        ]);
 
-        setTaxOptions(taxRes.response.data || []);
-        setDiscountOptions(discountRes.response.data || []);
-        setCategoryOptions(categoryRes.response.data || []);
-        setSupplierOptions(supplierRes.response.data || []);
-      } catch (error) {
-        showToast("Failed to fetch dropdown options");
-      }
-    };
+        const storeId = "680cc4cf0041f117f34e290b"; // Replace with dynamic value if needed
 
-    fetchOptions();
+        const {response, status} = await BackendRequest
   }, []);
 
+  const constructWarrantyPeriod = () => {
+    const { warrantyPeriodYears, warrantyPeriodMonths, warrantyPeriodDays } = formData;
+    if (
+      warrantyPeriodYears !== null ||
+      warrantyPeriodMonths !== null ||
+      warrantyPeriodDays !== null
+    ) {
+      return `P${warrantyPeriodYears || 0}Y${warrantyPeriodMonths || 0}M${warrantyPeriodDays || 0}D`;
+    }
+    return null;
+  };
+
   const addItem = async (item: FormDataType = formData) => {
+    if (item.baseSellingPrice && item.profitToGainInPercentage) {
+      showToast("Provide either Base Selling Price or Profit %, not both");
+      return;
+    }
+
     const payload = {
       ...item,
       expiryDate: toISOStringOrNull(item.expiryDate),
+      warrantyPeriod: constructWarrantyPeriod(),
     };
 
     try {
@@ -145,12 +128,12 @@ export const UseAddItems = () => {
       });
 
       if (status === 201) {
-        setAddedItem(response?.response?.data || null);
+        setAddedItem(response?.response?.data);
         showToast("Item added successfully");
       } else {
-        showToast(response.response.message || "Failed to add item");
+        showToast(response?.response?.message || "Failed to add item");
       }
-    } catch {
+    } catch (err) {
       showToast("Something went wrong!");
     } finally {
       setIsSubmitting(false);
@@ -174,7 +157,7 @@ export const UseAddItems = () => {
       newValue = target.multiple
         ? Array.from(target.selectedOptions).map((opt) => opt.value)
         : target.value || null;
-    } else if (target instanceof HTMLTextAreaElement) {
+    } else {
       newValue = target.value || null;
     }
 

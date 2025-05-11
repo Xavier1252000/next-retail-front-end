@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
 import { useToast } from '@/context/toast-context';
+import { useRouter } from 'next/navigation';
 
 interface UnitData {
   id: string;
@@ -14,6 +15,7 @@ const AllUnitMasters: React.FC = () => {
   const [units, setUnits] = useState<UnitData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
+  const  router = useRouter();
 
   const fetchUnits = async () => {
     setIsLoading(true);
@@ -40,10 +42,18 @@ const AllUnitMasters: React.FC = () => {
     fetchUnits();
   }, []);
 
-  console.log("-----------------------------------------", units);
+  const handleAddNewUnit = () => {
+    router.push("/masters/unitMaster/addUnitMaster")
+  }
 
   return (
-    <div className="p-4">
+    <div className="relative p-4 mt-13">
+      <button
+      onClick={handleAddNewUnit}
+        className="absolute top-6 right-4 mb bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
+      >
+        Add New User
+      </button>
       <h1 className="text-2xl font-bold mb-4">All Units</h1>
       {isLoading ? (
         <p>Loading units...</p>

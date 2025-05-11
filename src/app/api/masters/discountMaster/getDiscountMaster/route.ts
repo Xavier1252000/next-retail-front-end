@@ -11,7 +11,7 @@ export async function POST(request:Request) {
 
     console.log(requestBody)
     try {
-        const response = await axios.post(`${BACKEND_URL}/master/add-unit-master`,
+        const response = await axios.post(`${BACKEND_URL}/master/get-discount-master`,
             requestBody,
             {
                 headers:{
@@ -23,7 +23,7 @@ export async function POST(request:Request) {
         console.log(response)
         return NextResponse.json(response.data, {status: response.status})
     } catch (error:unknown) {
-        console.log("error in calling /master/add-unit-master" , error);
+        console.log("error in calling /master/get-discount-master" , error);
         if (axios.isAxiosError(error)) {
             console.error("API call error:", error.response?.data);
             return NextResponse.json(

@@ -20,7 +20,7 @@ export async function POST(request:Request) {
         )
         return NextResponse.json(response.data, {status: response.status})
     } catch (error:unknown) {
-        console.log("error in calling /master/tax-master-by-store-idr" , error);
+        console.log("error in calling /master/tax-master-by-store-id" , error);
         if (axios.isAxiosError(error)) {
             console.error("API call error:", error.response?.data);
             return NextResponse.json(

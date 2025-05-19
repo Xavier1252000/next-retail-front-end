@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
+import Cookies from 'js-cookie';
 
 export type Item = {
   id: string;
@@ -78,6 +78,7 @@ export function useAllItems({ storeId}: UseAllItemsProps) {
   };
 
   useEffect(() => {
+    console.log(Cookies.get("userRoles"))
     fetchItems();
   }, [storeId, index, itemPerIndex]);
 

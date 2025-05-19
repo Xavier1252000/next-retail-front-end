@@ -28,7 +28,6 @@ export default function LayoutShell({ children }: { children: ReactNode }) {
       >
         <NavbarDemo />
         <main className="p-4 flex-grow">{children}</main>
-        <Footer />
       </div>
     </div>
   );

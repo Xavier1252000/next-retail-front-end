@@ -87,25 +87,10 @@ export const UseAddItems = () => {
   const { showToast } = useToast();
 
   useEffect(() => {
-    const fetchOptions = async () => {
-      try {
 
-        const storeId = "680cc4cf0041f117f34e290b"; // Replace with dynamic value if needed
-
-        const {response, status} = await BackendRequest
+    
+    
   }, []);
-
-  const constructWarrantyPeriod = () => {
-    const { warrantyPeriodYears, warrantyPeriodMonths, warrantyPeriodDays } = formData;
-    if (
-      warrantyPeriodYears !== null ||
-      warrantyPeriodMonths !== null ||
-      warrantyPeriodDays !== null
-    ) {
-      return `P${warrantyPeriodYears || 0}Y${warrantyPeriodMonths || 0}M${warrantyPeriodDays || 0}D`;
-    }
-    return null;
-  };
 
   const addItem = async (item: FormDataType = formData) => {
     if (item.baseSellingPrice && item.profitToGainInPercentage) {
@@ -115,8 +100,7 @@ export const UseAddItems = () => {
 
     const payload = {
       ...item,
-      expiryDate: toISOStringOrNull(item.expiryDate),
-      warrantyPeriod: constructWarrantyPeriod(),
+      expiryDate: toISOStringOrNull(item.expiryDate)
     };
 
     try {

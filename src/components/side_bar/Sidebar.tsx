@@ -84,7 +84,6 @@ export default function Sidebar() {
           <LayoutDashboard className="w-6 h-6 text-indigo-500" />
           {isSidebarOpen && (
             <span className="text-xl font-semibold tracking-wide">
-              The App
             </span>
           )}
         </div>

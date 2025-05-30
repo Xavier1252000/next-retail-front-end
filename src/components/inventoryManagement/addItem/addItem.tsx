@@ -23,7 +23,7 @@ const AddItemForm = () => {
         className="p-8 bg-white rounded-xl shadow-md max-w-5xl mx-auto space-y-6"
       >
         <h2 className="text-3xl font-bold text-purple-600">Add New Item</h2>
-  
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Item Name */}
           <div>
@@ -37,7 +37,7 @@ const AddItemForm = () => {
               placeholder="Enter item name"
             />
           </div>
-  
+
           {/* Cost Price */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Cost Price</label>
@@ -50,7 +50,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Base Selling Price */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Base Selling Price</label>
@@ -63,7 +63,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Profit to Gain (%) */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Profit to Gain (%)</label>
@@ -76,7 +76,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Additional Price */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Additional Price</label>
@@ -89,7 +89,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Stock */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Stock</label>
@@ -102,7 +102,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Stock Threshold */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Stock Threshold</label>
@@ -115,8 +115,8 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
-          {/* SKU Code */}
+
+          {/* SKU Code
           <div>
             <label className="block font-semibold text-gray-800 mb-1">SKU Code</label>
             <input
@@ -126,8 +126,8 @@ const AddItemForm = () => {
               onChange={handleChange}
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-          </div>
-  
+          </div> */}
+
           {/* Barcode */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Barcode</label>
@@ -139,7 +139,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Stock Unit */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Stock Unit</label>
@@ -151,7 +151,7 @@ const AddItemForm = () => {
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-  
+
           {/* Applicable Taxes */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Applicable Taxes</label>
@@ -159,31 +159,55 @@ const AddItemForm = () => {
               name="applicableTaxes"
               multiple
               value={formData.applicableTaxes || []}
-              onChange={handleChange}
+              onChange={(e) => {
+                const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
+                handleChange({
+                  target: {
+                    name: "applicableTaxes",
+                    value: selectedValues,
+                  },
+                });
+              }}
               className="w-full h-28 p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               {taxOptions.map((tax: any) => (
-                <option key={tax.id} value={tax.id}>{tax.name}</option>
+                <option key={tax.id} value={tax.id}>
+                  {`${tax.taxCode} (${tax.taxPercentage}%)`}
+                </option>
               ))}
             </select>
           </div>
-  
+
+
+
           {/* Discounts */}
-          <div>
-            <label className="block font-semibold text-gray-800 mb-1">Discounts</label>
-            <select
-              name="discountMasterIds"
-              multiple
-              value={formData.discountMasterIds || []}
-              onChange={handleChange}
-              className="w-full h-28 p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              {discountOptions.map((d: any) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
-          </div>
-  
+<div>
+  <label className="block font-semibold text-gray-800 mb-1">Discounts</label>
+  <select
+    name="discountMasterIds"
+    multiple
+    value={formData.discountMasterIds || []}
+    onChange={(e) => {
+      const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
+      handleChange({
+        target: {
+          name: "discountMasterIds",
+          value: selectedValues,
+        },
+      });
+    }}
+    className="w-full h-28 p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+  >
+    {discountOptions.map((d: any) => (
+      <option key={d.id} value={d.id}>
+        {`${d.discountName} (${d.discountPercentage}%)`}
+      </option>
+    ))}
+  </select>
+</div>
+
+
+
           {/* Categories */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Categories</label>
@@ -199,7 +223,7 @@ const AddItemForm = () => {
               ))}
             </select>
           </div>
-  
+
           {/* Supplier */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Supplier</label>
@@ -216,7 +240,7 @@ const AddItemForm = () => {
             </select>
           </div>
         </div>
-  
+
         {/* Checkboxes */}
         <div className="flex gap-10 flex-wrap pt-4">
           <label className="flex items-center gap-2 font-medium">
@@ -240,7 +264,7 @@ const AddItemForm = () => {
             Warranty Available
           </label>
         </div>
-  
+
         {/* Submit Button */}
         <div className="pt-6">
           <button
@@ -254,7 +278,7 @@ const AddItemForm = () => {
       </form>
     </div>
   );
-  
+
 };
 
 export default AddItemForm;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface DiscountMaster {
   id: string;
@@ -22,6 +23,7 @@ const storeId = "6818e9de026b845f07cc9714"; // Make dynamic if needed
 const DiscountMasterTable: React.FC = () => {
   const [discounts, setDiscounts] = useState<DiscountMaster[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchDiscountMasters = async () => {
@@ -49,11 +51,15 @@ const DiscountMasterTable: React.FC = () => {
     return <div className="text-purple-600">Loading discount masters...</div>;
   }
 
+  const addDiscountMaster = () => {
+    router.push("/masters/discountMaster/addDiscountMaster");
+  }
+
   return (
     <div className="mt-13 overflow-x-auto bg-white shadow-md rounded-xl p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-semibold text-purple-600">Discount Masters</h1>
-        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium" onClick={addDiscountMaster}>
           Add New Discount Master
         </button>
       </div>

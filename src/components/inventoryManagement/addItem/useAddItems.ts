@@ -2,6 +2,7 @@ import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { KeyboardEvent, useEffect, useState } from "react";
 import { toISOStringOrNull } from "@/utils/helper";
+import Cookies from "js-cookie";
 
 export interface FormDataType {
   storeId: string;
@@ -20,7 +21,6 @@ export interface FormDataType {
   itemStock: number | null;
   stockThreshold: number | null;
   tutorialLinks: string[] | null;
-  skuCode: string | null;
   barcode: string | null;
   stockUnit: string | null;
   isReturnable: boolean | null;
@@ -51,7 +51,7 @@ interface TaxMaster {
 
 export const UseAddItems = () => {
   const [formData, setFormData] = useState<FormDataType>({
-    storeId: "680cc4cf0041f117f34e290b",
+    storeId: "",
     itemName: null,
     costPrice: null,
     profitToGainInPercentage: null,
@@ -67,7 +67,6 @@ export const UseAddItems = () => {
     itemStock: null,
     stockThreshold: null,
     tutorialLinks: null,
-    skuCode: null,
     barcode: null,
     stockUnit: null,
     isReturnable: null,
@@ -86,11 +85,68 @@ export const UseAddItems = () => {
   const [supplierOptions, setSupplierOptions] = useState([]);
   const { showToast } = useToast();
 
-  useEffect(() => {
+  const storeId = Cookies.get("storeId");
 
+  const payload = {
+      data: {
+        storeId: storeId
+      }
+    };
+
+
+    // fetching tax options
+  const fetchTaxMaster = async () => {
+    try {
+      setIsSubmitting(true);
+      const { response, status } = await BackendRequest("/api/masters/taxMaster/taxMasterByStoreId", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (status === 200) {
+        setTaxOptions(response?.response?.data);
+        // showToast("Item added successfully");
+      } else {
+        showToast(response?.response?.message || "Failed to add item");
+      }
+    } catch (err) {
+      showToast("Something went wrong!");
+    }
+  };
+
+  // fetching discount options
+  const fetchDiscountMaster = async () =>{
+    const payload = {
+      data:{
+        storeIds:[storeId]
+      }
+    }
+    try {
+      const {response, status} = await BackendRequest("/api/masters/discountMaster/getDiscountMaster", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      });
+
+      if(status === 200 || response?.response?.statusCode === 200){
+        setDiscountOptions(response?.response.data);
+      } else {
+        showToast(response?.response?.message || "Failed to add item");
+      }
+    } catch (error) {
+      showToast("something went wrong while fetching discounts")
+    }
+  }
+
+  // fetching all the dropdowns
+  useEffect(() => {
     
-    
-  }, []);
+
+  fetchTaxMaster();
+  fetchDiscountMaster();
+  }
+  , []);
 
   const addItem = async (item: FormDataType = formData) => {
     if (item.baseSellingPrice && item.profitToGainInPercentage) {
@@ -100,6 +156,7 @@ export const UseAddItems = () => {
 
     const payload = {
       ...item,
+      storeId: storeId,
       expiryDate: toISOStringOrNull(item.expiryDate)
     };
 

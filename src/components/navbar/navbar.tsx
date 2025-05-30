@@ -68,10 +68,15 @@ export function NavbarDemo() {
         const stores = response?.response?.data || [];
         setStoreList(stores);
 
-        // Set first store as selected
+        // Check for existing storeId in cookies
+        const storedStoreId = Cookies.get("storeId");
         if (stores.length > 0) {
-          setSelectedStore(stores[0]);
-          setDisplayName(stores[0].storeName);
+          const selected = storedStoreId 
+            ? stores.find((store: { id: string; }) => store.id === storedStoreId) || stores[0]
+            : stores[0];
+          setSelectedStore(selected);
+          setDisplayName(selected.storeName);
+          Cookies.set("storeId", selected.id);
         }
       }
     } catch (err) {
@@ -183,6 +188,7 @@ export function NavbarDemo() {
                               onClick={() => {
                                 setSelectedStore(store);
                                 setDisplayName(store.storeName);
+                                Cookies.set("storeId", store.id);
                                 setIsStoreDropdownOpen(false);
                               }}
                               className={`px-4 py-2 cursor-pointer hover:bg-purple-100 ${

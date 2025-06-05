@@ -1,6 +1,7 @@
 import axios from "axios";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { serialize } from "cookie";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -16,24 +17,64 @@ export async function POST(request: Request) {
                 },
             }
         );
-        const token = response.data.response.data.token;
-        const userId = response.data.response.data.user.id;
-        const roles = response.data.response.data.user.roles;
-        const name = response.data.response.data.user?.firstName +" "+ response.data.response.data.user?.lastName;
-        const expirationDate = new Date(response.data.response.data.expirationDate);
+        // const token = response.data.response.data.token;
+        // const userId = response.data.response.data.user.id;
+        // const roles = response.data.response.data.user.roles;
+        // const name = response.data.response.data.user?.firstName +" "+ response.data.response.data.user?.lastName;
+        // const expirationDate = new Date(response.data.response.data.expirationDate);
 
-        let cookieStore = cookies();
-        (await cookieStore).set("authToken", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "lax",
-            expires: expirationDate,
-          });
-        (await cookieStore).set("userId", userId, {expires: expirationDate});
-        (await cookieStore).set("name", name, {expires: expirationDate});
-        (await cookieStore).set("userRoles", JSON.stringify(roles), {expires: expirationDate});
+        const {
+      token,
+      expirationDate,
+      user: { id: userId, roles, firstName, lastName },
+    } = response.data.response.data;
+
+    const expires = new Date(expirationDate);
+    const name = `${firstName} ${lastName}`;
+
+
+        const cookieHeaders = [
+      serialize("authToken", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        expires,
+      }),
+      serialize("userId", userId.toString(), {
+        path: "/",
+        expires,
+      }),
+      serialize("name", name, {
+        path: "/",
+        expires,
+      }),
+      serialize("userRoles", JSON.stringify(roles), {
+        path: "/",
+        expires,
+      }),
+    ];
+
+    const res = NextResponse.json(response.data, { status: response.status });
+
+
+        cookieHeaders.forEach((cookie) => {
+      res.headers.append("Set-Cookie", cookie);
+    });
+
+        // let cookieStore = cookies();
+        // (await cookieStore).set("authToken", token, {
+        //     httpOnly: true,
+        //     secure: true,
+        //     sameSite: "lax",
+        //     expires: expirationDate,
+        //   });
+        // (await cookieStore).set("userId", userId, {expires: expirationDate});
+        // (await cookieStore).set("name", name, {expires: expirationDate});
+        // (await cookieStore).set("userRoles", JSON.stringify(roles), {expires: expirationDate});
         
-        return NextResponse.json(response.data, { status: response.status });
+        return res;
+    
     } catch (error: unknown) {
         console.error("API call error:", error);
         if (axios.isAxiosError(error)) {

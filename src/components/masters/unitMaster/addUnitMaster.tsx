@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useToast } from '@/context/toast-context';
 import { useRouter } from 'next/navigation';
 import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
 import { Button } from '@/components/ui/button';
+import Cookies from 'js-cookie';
 
 interface UnitFormDataType {
   unitFullForm: string;
@@ -12,14 +13,28 @@ interface UnitFormDataType {
 }
 
 const AddUnitMaster: React.FC = () => {
+  const [isStaff, setIsStaff] = useState<boolean>(false);
   const [formData, setFormData] = useState<UnitFormDataType>({
     unitFullForm: '',
     unitNotation: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { showToast } = useToast();
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Detect role once on mount
+  useEffect(() => {
+    const userRoles = Cookies.get('userRoles');
+    try {
+      const roles: string[] = JSON.parse(userRoles || '[]');
+      if (roles.includes('STAFF')) {
+        setIsStaff(true);
+      }
+    } catch (err) {
+      console.error('Error parsing userRoles:', err);
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -32,15 +47,17 @@ const AddUnitMaster: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const storeId = Cookies.get('storeId');
+
+    const payload = {
+      unitFullForm: formData.unitFullForm,
+      unitNotation: formData.unitNotation,
+      storeIds: isStaff && storeId ? [storeId] : [],
+    };
+
     try {
-      const payload = {
-        unitFullForm: formData.unitFullForm,
-        unitNotation: formData.unitNotation,
-      };
-
-      console.log(payload)
-
-      const { response, status } = await BackendRequest('api/masters/unitMaster/addUnitMaster', {
+      const { response, status } = await BackendRequest('/api/masters/unitMaster/addUnitMaster', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -48,14 +65,14 @@ const AddUnitMaster: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (status === 200 || response?.response?.statusCode === 201) {
+      if (status === 201 || response?.response?.statusCode === 201) {
         showToast('Unit added successfully');
-        router.push('/masters/unitMaster/allUnitmasters');
+        router.push('/masters/unitMaster/allUnitMasters');
       } else {
-        showToast('Failed to add unit');
+        showToast(response?.response.message);
       }
     } catch (error) {
-      showToast('Something went wrong' + error);
+      showToast('Something went wrong: ' + error);
     } finally {
       setIsSubmitting(false);
     }
@@ -87,7 +104,11 @@ const AddUnitMaster: React.FC = () => {
             className="w-full border p-2 rounded"
           />
         </div>
-        <Button type="submit" disabled={isSubmitting} className="bg-purple-500 hover:bg-purple-700 text-white w-full">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-purple-500 hover:bg-purple-700 text-white w-full"
+        >
           {isSubmitting ? 'Saving...' : 'Save Unit'}
         </Button>
       </form>

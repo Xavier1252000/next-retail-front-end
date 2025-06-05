@@ -81,21 +81,20 @@ export const UseAddItems = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxOptions, setTaxOptions] = useState<TaxMaster[]>([]);
   const [discountOptions, setDiscountOptions] = useState([]);
+  const [unitOptions, setUnitOptions] = useState([]);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [supplierOptions, setSupplierOptions] = useState([]);
   const { showToast } = useToast();
 
   const storeId = Cookies.get("storeId");
 
-  const payload = {
+    // fetching tax options
+  const fetchTaxMaster = async () => {
+    const payload = {
       data: {
         storeId: storeId
       }
     };
-
-
-    // fetching tax options
-  const fetchTaxMaster = async () => {
     try {
       setIsSubmitting(true);
       const { response, status } = await BackendRequest("/api/masters/taxMaster/taxMasterByStoreId", {
@@ -139,12 +138,37 @@ export const UseAddItems = () => {
     }
   }
 
+  // fetching unit options
+  const fetchUnitOptions = async () => {
+    const payload = {
+      data:{
+        storeIds:[storeId]
+      }
+    }
+
+    try {
+          const { response, status } = await BackendRequest('/api/masters/unitMaster/getUnitMaster', {
+            method: 'POST',
+            headers: {
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          if (status === 200 && response?.response?.statusCode === 200) {
+            setUnitOptions(response?.response?.data || []);
+          } else {
+            showToast('Failed to fetch units');
+          }
+        } catch (error) {
+          showToast('Something went wrong while fetching units');
+        }
+  }
+
   // fetching all the dropdowns
   useEffect(() => {
-    
-
   fetchTaxMaster();
   fetchDiscountMaster();
+  fetchUnitOptions();
   }
   , []);
 
@@ -234,5 +258,6 @@ export const UseAddItems = () => {
     discountOptions,
     categoryOptions,
     supplierOptions,
+    unitOptions
   };
 };

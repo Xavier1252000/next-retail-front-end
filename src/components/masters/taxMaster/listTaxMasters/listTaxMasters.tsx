@@ -2,14 +2,16 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { useToast } from "@/context/toast-context";
+import UpdateTaxMaster from "../updateTaxMaster/updateTaxMaster";
 
-interface TaxMaster {
+export interface TaxMaster {
   id: string;
   createdOn: string;
   modifiedOn: string;
   createdBy: string;
   modifiedBy: string;
-  active: Boolean;
+  active: boolean;
   storeIds: string[];
   taxCode: string;
   taxType: string;
@@ -26,6 +28,7 @@ const TaxMasterTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [storeId, setStoreId] = useState<string | null>(null);
   const router = useRouter();
+  const showToast = useToast();
 
   useEffect(() => {
     const cookieStoreId = Cookies.get("storeId");
@@ -50,7 +53,6 @@ const TaxMasterTable: React.FC = () => {
         const result = await response.json();
         const taxData = result?.response?.data || [];
         setData(taxData);
-        console.log("------------------------",taxData)
       } catch (error) {
         console.error("Error fetching tax masters:", error);
       } finally {
@@ -68,6 +70,25 @@ const TaxMasterTable: React.FC = () => {
       alert("Store ID is missing.");
     }
   };
+
+  const deleteTaxMaster = async (taxMasterId: string) => {
+    try {
+      const response = await fetch("/api/masters/taxMaster/deleteTaxMaster", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: { id: taxMasterId } }),
+      });
+
+      if(response.ok){
+        setData((prev) => prev.filter((item) => item.id !== taxMasterId));
+      }
+    } catch (error) {
+      console.error("Error fetching tax masters:", error);
+    }
+  };
+
 
   if (loading) {
     return <div className="text-purple-600">Loading tax masters...</div>;
@@ -100,6 +121,7 @@ const TaxMasterTable: React.FC = () => {
               <th className="px-4 py-2">Included in Base Price</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Description</th>
+              <th className="px-4 py-2">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-purple-300">
@@ -118,9 +140,16 @@ const TaxMasterTable: React.FC = () => {
                     : "-"}
                 </td>
                 <td className="px-4 py-2">{tax.inclusionOnBasePrice ? "Yes" : "No"}</td>
-                <td className="px-4 py-2">{tax.active}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${tax.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {tax.active ? "Active" : "Inactive"}
+                  </span>
+                </td>
                 <td className="px-4 py-2">{tax.description || "-"}</td>
-               
+                <td className="px-4 py-2">
+                  <button className="bg-purple-500 hover:bg-purple-700 text-white px-2 py-1 rounded-lg text-sm font-medium mx-1" onClick={() => router.push(`/masters/taxMaster/updateTaxMaster/${tax.id}`)}>Update</button>
+                  <button className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-sm font-medium" onClick={() => deleteTaxMaster(tax.id)}>Delete</button>
+                </td>
               </tr>
             ))}
           </tbody>

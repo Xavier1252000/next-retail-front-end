@@ -2,6 +2,8 @@
 
 import React from "react";
 import { UseAddItems } from "./useAddItems";
+import Select from "react-select";
+import { Option } from "lucide-react";
 
 const AddItemForm = () => {
   const {
@@ -14,7 +16,43 @@ const AddItemForm = () => {
     categoryOptions,
     supplierOptions,
     preventInvalidNumberInput,
+    unitOptions
   } = UseAddItems();
+
+
+  // taxMasters
+  const taxSelectOptions = taxOptions.map((tax: any) => ({
+    value: tax.id,
+    label: `${tax.taxCode} (${tax.taxPercentage}%)`,
+  }));
+
+
+  // Convert formData.applicableTaxes (IDs) to selected option objects
+  const selectedTaxes = taxSelectOptions.filter((option) =>
+    formData.applicableTaxes?.includes(option.value)
+  );
+
+  // discount
+  const discountSelectOptions = discountOptions.map((discount : any) => ({
+    value: discount.id,
+    label : `${discount.discountName} - ${discount.discountCouponCode} (${discount.discountPercentage})`
+  }));
+
+  // selected discount options
+  const selectedDiscount = discountSelectOptions.filter((option) => 
+    formData.discountMasterIds?.includes(option.value)
+  );
+
+  // unit
+  const unitSelectOptions = unitOptions.map((unit:any) => ({
+    value: unit.id,
+    label: `${unit.unit} (${unit.unitNotation})`
+  }));
+
+  // selected unit options
+const selectedUnits = unitSelectOptions.find(
+  (option) => option.value === formData.stockUnit
+);
 
   return (
     <div className="mt-10">
@@ -116,18 +154,6 @@ const AddItemForm = () => {
             />
           </div>
 
-          {/* SKU Code
-          <div>
-            <label className="block font-semibold text-gray-800 mb-1">SKU Code</label>
-            <input
-              type="text"
-              name="skuCode"
-              value={formData.skuCode || ""}
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-          </div> */}
-
           {/* Barcode */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Barcode</label>
@@ -143,24 +169,33 @@ const AddItemForm = () => {
           {/* Stock Unit */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Stock Unit</label>
-            <input
-              type="text"
+            <Select
               name="stockUnit"
-              value={formData.stockUnit || ""}
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              options={unitSelectOptions}
+              value={selectedUnits}
+              onChange={(selectedOption) => {
+                handleChange({
+                  target: {
+                    name: 'stockUnit',
+                    value: selectedOption?.value || '',
+                  },
+                });
+              }}
+              className="react-select-container"
+              classNamePrefix="react-select"
             />
           </div>
 
           {/* Applicable Taxes */}
           <div>
             <label className="block font-semibold text-gray-800 mb-1">Applicable Taxes</label>
-            <select
+            <Select
+              isMulti
+              options={taxSelectOptions}
               name="applicableTaxes"
-              multiple
-              value={formData.applicableTaxes || []}
-              onChange={(e) => {
-                const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
+              value={selectedTaxes}
+              onChange={(selectedOptions) => {
+                const selectedValues = selectedOptions.map((opt) => opt.value);
                 handleChange({
                   target: {
                     name: "applicableTaxes",
@@ -168,43 +203,33 @@ const AddItemForm = () => {
                   },
                 });
               }}
-              className="w-full h-28 p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              {taxOptions.map((tax: any) => (
-                <option key={tax.id} value={tax.id}>
-                  {`${tax.taxCode} (${tax.taxPercentage}%)`}
-                </option>
-              ))}
-            </select>
+              className="react-select-container"
+              classNamePrefix="react-select" />
           </div>
 
 
 
           {/* Discounts */}
-<div>
-  <label className="block font-semibold text-gray-800 mb-1">Discounts</label>
-  <select
-    name="discountMasterIds"
-    multiple
-    value={formData.discountMasterIds || []}
-    onChange={(e) => {
-      const selectedValues = Array.from(e.target.selectedOptions, (option) => option.value);
-      handleChange({
-        target: {
-          name: "discountMasterIds",
-          value: selectedValues,
-        },
-      });
-    }}
-    className="w-full h-28 p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-  >
-    {discountOptions.map((d: any) => (
-      <option key={d.id} value={d.id}>
-        {`${d.discountName} (${d.discountPercentage}%)`}
-      </option>
-    ))}
-  </select>
-</div>
+          <div>
+            <label className="block font-semibold text-gray-800 mb-1">Discounts</label>
+            <Select
+              name="discountMasterIds"
+              isMulti
+              options={discountSelectOptions}
+              value={selectedDiscount}
+              onChange={(selectedOptions) => {
+                const selectedValues = selectedOptions.map((opt) => opt.value);
+                handleChange({
+                  target: {
+                    name: "discountMasterIds",
+                    value: selectedValues,
+                  },
+                });
+              }}
+              className="react-select-container"
+              classNamePrefix="react-select"
+               />
+          </div>
 
 
 

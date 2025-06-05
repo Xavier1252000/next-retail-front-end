@@ -4,12 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-export async function POST(request: Request) {
+export async function POST(request:Request) {
     const token = (await cookies()).get("authToken")?.value;
     const requestBody = await request.json();
 
     try {
-        const response = await axios.post(`${BACKEND_URL}/master/get-all-unit-master`,
+        const response = await axios.post(`${BACKEND_URL}/master/delete-tax-master-by-id`,
             requestBody,
             {
                 headers:{
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         )
         return NextResponse.json(response.data, {status: response.status})
     } catch (error:unknown) {
-        console.log("error in calling /master/get-all-unit-master" , error);
+        console.log("error in calling /master/add-tax-master" , error);
         if (axios.isAxiosError(error)) {
             console.error("API call error:", error.response?.data);
             return NextResponse.json(

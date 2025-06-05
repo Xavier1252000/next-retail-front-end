@@ -6,7 +6,6 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export async function POST(request:Request) {
     const token = (await cookies()).get("authToken")?.value;
-    console.log("-----------------------------",request)
     const requestBody = await request.json();
 
     try {

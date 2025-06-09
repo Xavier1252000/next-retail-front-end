@@ -190,6 +190,7 @@ export function NavbarDemo() {
                                 setDisplayName(store.storeName);
                                 Cookies.set("storeId", store.id);
                                 setIsStoreDropdownOpen(false);
+                                window.location.reload();
                               }}
                               className={`px-4 py-2 cursor-pointer hover:bg-purple-100 ${
                                 selectedStore?.id === store.id

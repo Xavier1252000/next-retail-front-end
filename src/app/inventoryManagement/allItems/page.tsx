@@ -4,7 +4,7 @@ import React from 'react'
 function page() {
   return (
     <div>
-      <AllItems storeId={'12345'} />
+      <AllItems />
     </div>
   )
 }

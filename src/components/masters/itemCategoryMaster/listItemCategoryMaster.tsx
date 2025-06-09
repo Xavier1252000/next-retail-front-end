@@ -54,7 +54,6 @@ const AllItemCategoryMasters: React.FC = () =>{
           },
           body: JSON.stringify(payload)
         });
-        console.log(response.response)
         if (status === 200 && response?.response?.statusCode === 200) {
           setCategories(response?.response?.data || []);
         } else {
@@ -72,7 +71,7 @@ const AllItemCategoryMasters: React.FC = () =>{
       }, []);
 
     const addCategoryMaster = () => {
-        router.push("/")
+        router.push("/masters/itemCategoryMaster/addItemCategoryMaster")
     }
 
     return (

@@ -3,6 +3,7 @@ import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { KeyboardEvent, useEffect, useState } from "react";
 import { toISOStringOrNull } from "@/utils/helper";
 import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 export interface FormDataType {
   storeId: string;
@@ -52,25 +53,25 @@ interface TaxMaster {
 export const UseAddItems = () => {
   const [formData, setFormData] = useState<FormDataType>({
     storeId: "",
-    itemName: null,
+    itemName: "",
     costPrice: null,
     profitToGainInPercentage: null,
     baseSellingPrice: null,
     additionalPrice: null,
     applicableTaxes: null,
     discountMasterIds: null,
-    brand: null,
-    categoryIds: null,
-    supplierId: null,
+    brand: "",
+    categoryIds: [],
+    supplierId: "",
     description: null,
     itemImageInfoIds: null,
     itemStock: null,
     stockThreshold: null,
-    tutorialLinks: null,
-    barcode: null,
-    stockUnit: null,
-    isReturnable: null,
-    isWarrantyAvailable: null,
+    tutorialLinks: [],
+    barcode: "",
+    stockUnit: "",
+    isReturnable: false,
+    isWarrantyAvailable: false,
     warrantyPeriodYears: null,
     warrantyPeriodMonths: null,
     warrantyPeriodDays: null,
@@ -82,9 +83,10 @@ export const UseAddItems = () => {
   const [taxOptions, setTaxOptions] = useState<TaxMaster[]>([]);
   const [discountOptions, setDiscountOptions] = useState([]);
   const [unitOptions, setUnitOptions] = useState([]);
-  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [itemCategoryOptions, setItemCategoryOptions] = useState([]);
   const [supplierOptions, setSupplierOptions] = useState([]);
   const { showToast } = useToast();
+  const router = useRouter();
 
   const storeId = Cookies.get("storeId");
 
@@ -164,29 +166,55 @@ export const UseAddItems = () => {
         }
   }
 
+  // fetching category options
+  const fetchItemCategoryOptions = async () => {
+    const payload = {
+      data:{
+        storeIds:[storeId]
+      }
+    }
+
+    try {
+          const { response, status } = await BackendRequest('/api/masters/itemCategoryMaster/getAllItemCategoryMaster', {
+            method: 'POST',
+            headers: {
+            },
+            body: JSON.stringify(payload)
+          });
+          
+          if (status === 200 && response?.response?.statusCode === 200) {
+            setItemCategoryOptions(response?.response?.data || []);
+          } else {
+            showToast('Failed to fetch units');
+          }
+        } catch (error) {
+          showToast('Something went wrong while fetching units');
+        }
+  }
+
+
   // fetching all the dropdowns
   useEffect(() => {
   fetchTaxMaster();
   fetchDiscountMaster();
   fetchUnitOptions();
+  fetchItemCategoryOptions();
   }
   , []);
 
   const addItem = async (item: FormDataType = formData) => {
-    if (item.baseSellingPrice && item.profitToGainInPercentage) {
-      showToast("Provide either Base Selling Price or Profit %, not both");
-      return;
-    }
-
-    const payload = {
+    const payload ={data: {
       ...item,
       storeId: storeId,
-      expiryDate: toISOStringOrNull(item.expiryDate)
-    };
-
+      expiryDate: item.expiryDate?toISOStringOrNull(item.expiryDate):""
+    }
+  };
+    
     try {
+      console.log("try running")
       setIsSubmitting(true);
-      const { response, status } = await BackendRequest("api/inventoryManagement/addItem", {
+      
+      const { response, status } = await BackendRequest("/api/inventoryManagement/addItem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -194,12 +222,13 @@ export const UseAddItems = () => {
 
       if (status === 201) {
         setAddedItem(response?.response?.data);
+        router.push("/inventoryManagement/allItems")
         showToast("Item added successfully");
       } else {
         showToast(response?.response?.message || "Failed to add item");
       }
     } catch (err) {
-      showToast("Something went wrong!");
+      showToast("Something went wrong!"+ err);
     } finally {
       setIsSubmitting(false);
     }
@@ -256,7 +285,7 @@ export const UseAddItems = () => {
     preventInvalidNumberInput,
     taxOptions,
     discountOptions,
-    categoryOptions,
+    itemCategoryOptions,
     supplierOptions,
     unitOptions
   };

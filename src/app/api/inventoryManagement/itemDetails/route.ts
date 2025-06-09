@@ -1,15 +1,14 @@
 import axios from "axios";
 import { cookies, headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 export async function POST(request: Request){
     const token = (await cookies()).get("authToken")?.value;
     const requestBody = await request.json();
-    console.log(requestBody)
 
     try {
-        const response = await axios.post(`${BACKEND_URL}/items/add-items-to-store`, requestBody,
+        const response = await axios.post(`${BACKEND_URL}/items/get-item-by-id`, requestBody,
             {
                 headers:{
                     "Content-Type": "application/json",
@@ -21,7 +20,7 @@ export async function POST(request: Request){
 
         return NextResponse.json(response.data, {status: response.status});
     } catch (error: unknown) {
-        console.log("error in calling item/add-item-to-store" , error);
+        console.log("error in calling /items/get-item-by-id" , error);
         if (axios.isAxiosError(error)) {
             console.error("API call error:", error.response?.data);
             return NextResponse.json(

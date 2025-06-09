@@ -4,7 +4,6 @@ import React from 'react'
 
 async function ManageUser({params}:{params:Promise<{userId: string}>}) {
     const userId = (await params).userId
-    console.log(userId)
   return (
     <div>
       <AddUserPermissions userId={userId}/>

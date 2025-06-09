@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 export type Item = {
   id: string;
   itemName: string;
+  costPrice:number;
   finalPrice: number;
   itemStock: number;
   skuCode: string;

@@ -35,6 +35,7 @@ export interface ItemDetailsResponse {
   thresholdQuantityForAddTax: number | null
   isReturnable: boolean
   isWarrantyAvailable: boolean
+  warrantyPeriod: string
   warrantyYears: number,
   warrantyMonths: number,
   warrantyDays: number
@@ -118,7 +119,7 @@ const ItemDetails: React.FC<ItemDetailsProps> = ({ itemId }) => {
       <Detail label="Threshold Qty for Tax" value={itemDetails.thresholdQuantityForAddTax ?? "N/A"} />
       <Detail label="Is Returnable" value={itemDetails.isReturnable ? "Yes" : "No"} />
       <Detail label="Warranty Available" value={itemDetails.isWarrantyAvailable ? "Yes" : "No"} />
-      <Detail label="Warranty" value={itemDetails.warrantyYears + itemDetails.warrantyMonths + itemDetails.warrantyDays}  />
+      <Detail label="Warranty" value={itemDetails.warrantyPeriod}  />
       <Detail label="Expiry Date" value={itemDetails.expiryDate ?? "N/A"} />
       <Detail label="Created By" value={itemDetails.createdBy} />
       <Detail label="Created By ID" value={itemDetails.createdById} />

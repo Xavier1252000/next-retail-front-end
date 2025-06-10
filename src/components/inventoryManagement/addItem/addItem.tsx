@@ -125,7 +125,6 @@ const AddItemForm = () => {
               value={formData.baseSellingPrice ?? ""}
               onChange={handleChange}
               onKeyDown={preventInvalidNumberInput}
-              disabled={formData.profitToGainInPercentage !== null }
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
@@ -140,7 +139,6 @@ const AddItemForm = () => {
               value={formData.profitToGainInPercentage ?? ""}
               onChange={handleChange}
               onKeyDown={preventInvalidNumberInput}
-              disabled={formData.baseSellingPrice !== null}
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>

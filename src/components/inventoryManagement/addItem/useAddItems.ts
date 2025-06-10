@@ -90,7 +90,7 @@ export const UseAddItems = () => {
 
   const storeId = Cookies.get("storeId");
 
-    // fetching tax options
+  // fetching tax options
   const fetchTaxMaster = async () => {
     const payload = {
       data: {
@@ -117,20 +117,20 @@ export const UseAddItems = () => {
   };
 
   // fetching discount options
-  const fetchDiscountMaster = async () =>{
+  const fetchDiscountMaster = async () => {
     const payload = {
-      data:{
-        storeIds:[storeId]
+      data: {
+        storeIds: [storeId]
       }
     }
     try {
-      const {response, status} = await BackendRequest("/api/masters/discountMaster/getDiscountMaster", {
+      const { response, status } = await BackendRequest("/api/masters/discountMaster/getDiscountMaster", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
-      if(status === 200 || response?.response?.statusCode === 200){
+      if (status === 200 || response?.response?.statusCode === 200) {
         setDiscountOptions(response?.response.data);
       } else {
         showToast(response?.response?.message || "Failed to add item");
@@ -143,77 +143,78 @@ export const UseAddItems = () => {
   // fetching unit options
   const fetchUnitOptions = async () => {
     const payload = {
-      data:{
-        storeIds:[storeId]
+      data: {
+        storeIds: [storeId]
       }
     }
 
     try {
-          const { response, status } = await BackendRequest('/api/masters/unitMaster/getUnitMaster', {
-            method: 'POST',
-            headers: {
-            },
-            body: JSON.stringify(payload)
-          });
-          
-          if (status === 200 && response?.response?.statusCode === 200) {
-            setUnitOptions(response?.response?.data || []);
-          } else {
-            showToast('Failed to fetch units');
-          }
-        } catch (error) {
-          showToast('Something went wrong while fetching units');
-        }
+      const { response, status } = await BackendRequest('/api/masters/unitMaster/getUnitMaster', {
+        method: 'POST',
+        headers: {
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (status === 200 && response?.response?.statusCode === 200) {
+        setUnitOptions(response?.response?.data || []);
+      } else {
+        showToast('Failed to fetch units');
+      }
+    } catch (error) {
+      showToast('Something went wrong while fetching units');
+    }
   }
 
   // fetching category options
   const fetchItemCategoryOptions = async () => {
     const payload = {
-      data:{
-        storeIds:[storeId]
+      data: {
+        storeIds: [storeId]
       }
     }
 
     try {
-          const { response, status } = await BackendRequest('/api/masters/itemCategoryMaster/getAllItemCategoryMaster', {
-            method: 'POST',
-            headers: {
-            },
-            body: JSON.stringify(payload)
-          });
-          
-          if (status === 200 && response?.response?.statusCode === 200) {
-            setItemCategoryOptions(response?.response?.data || []);
-          } else {
-            showToast('Failed to fetch units');
-          }
-        } catch (error) {
-          showToast('Something went wrong while fetching units');
-        }
+      const { response, status } = await BackendRequest('/api/masters/itemCategoryMaster/getAllItemCategoryMaster', {
+        method: 'POST',
+        headers: {
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (status === 200 && response?.response?.statusCode === 200) {
+        setItemCategoryOptions(response?.response?.data || []);
+      } else {
+        showToast('Failed to fetch units');
+      }
+    } catch (error) {
+      showToast('Something went wrong while fetching units');
+    }
   }
 
 
   // fetching all the dropdowns
   useEffect(() => {
-  fetchTaxMaster();
-  fetchDiscountMaster();
-  fetchUnitOptions();
-  fetchItemCategoryOptions();
+    fetchTaxMaster();
+    fetchDiscountMaster();
+    fetchUnitOptions();
+    fetchItemCategoryOptions();
   }
-  , []);
+    , []);
 
   const addItem = async (item: FormDataType = formData) => {
-    const payload ={data: {
-      ...item,
-      storeId: storeId,
-      expiryDate: item.expiryDate?toISOStringOrNull(item.expiryDate):""
-    }
-  };
-    
+    const payload = {
+      data: {
+        ...item,
+        storeId: storeId,
+        expiryDate: item.expiryDate ? toISOStringOrNull(item.expiryDate) : ""
+      }
+    };
+
     try {
       console.log("try running")
       setIsSubmitting(true);
-      
+
       const { response, status } = await BackendRequest("/api/inventoryManagement/addItem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -228,7 +229,7 @@ export const UseAddItems = () => {
         showToast(response?.response?.message || "Failed to add item");
       }
     } catch (err) {
-      showToast("Something went wrong!"+ err);
+      showToast("Something went wrong!" + err);
     } finally {
       setIsSubmitting(false);
     }
@@ -255,10 +256,35 @@ export const UseAddItems = () => {
       newValue = target.value || null;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: newValue,
-    }));
+    setFormData((prev) => {
+      const updatedData = { ...prev, [name]: newValue };
+
+      if (name === "profitToGainInPercentage" && updatedData.costPrice != null && newValue != null) {
+        const profitPercentage = newValue;
+        const costPrice = updatedData.costPrice;
+        const baseSellingPrice = costPrice + (costPrice * profitPercentage / 100);
+        updatedData.baseSellingPrice = Math.round(baseSellingPrice * 100) / 100;
+      } else if (name === "baseSellingPrice" && updatedData.costPrice != null && newValue != null && updatedData.costPrice !== 0) {
+        const baseSellingPrice = newValue;
+        const costPrice = updatedData.costPrice;
+        const profitPercentage = ((baseSellingPrice - costPrice) / costPrice) * 100;
+        updatedData.profitToGainInPercentage = Math.round(profitPercentage * 100) / 100;
+      } else if (name === "costPrice" && newValue != null) {
+        if (prev.profitToGainInPercentage != null) {
+          const profitPercentage = prev.profitToGainInPercentage;
+          const costPrice = newValue;
+          const baseSellingPrice = costPrice + (costPrice * profitPercentage / 100);
+          updatedData.baseSellingPrice = Math.round(baseSellingPrice * 100) / 100;
+        } else if (prev.baseSellingPrice != null && newValue !== 0) {
+          const baseSellingPrice = prev.baseSellingPrice;
+          const costPrice = newValue;
+          const profitPercentage = ((baseSellingPrice - costPrice) / costPrice) * 100;
+          updatedData.profitToGainInPercentage = Math.round(profitPercentage * 100) / 100;
+        }
+      }
+
+      return updatedData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -163,7 +163,7 @@ const AllItems: React.FC = () => {
                 <td className="border px-4 py-2">{item.itemName}</td>
                 <td className="border px-4 py-2">{item.stockThreshold}</td>
                 <td className="border px-4 py-2">{item.stockUnit}</td>
-                <td className="border px-4 py-2">{item.itemStock}</td>
+                <td className={`border px-4 py-2 ${item.itemStock < item.stockThreshold ? 'text-red-500 font-bold':''}`}>{item.itemStock}</td>
                 <td className="border px-4 py-2">₹{item.finalPrice}</td>
                 <td className="border px-4 py-2">{item.isWarrantyAvailable ? "Yes" : "No"}</td>
                 <td className="border px-4 py-2">{item.warrantyPeriod}</td>

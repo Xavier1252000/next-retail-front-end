@@ -2,7 +2,6 @@ import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { useRouter } from "next/router";
 
 export const usePermissions = () => {
     const { showToast } = useToast();

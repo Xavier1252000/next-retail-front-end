@@ -15,7 +15,7 @@ export default function LayoutShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar only if logged in */}
       {isLoggedIn && (
-        <div className={`transition-all duration-300 ${isOpen ? "w-64" : "w-16"}`}>
+        <div className={`transition-all duration-300 ${isOpen ? "w-70" : "w-14"}`}>
           <Sidebar />
         </div>
       )}

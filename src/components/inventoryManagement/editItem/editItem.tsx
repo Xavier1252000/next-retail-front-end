@@ -62,7 +62,7 @@ const EditItem: React.FC<ItemDetailsProps> = ({ itemId }) => {
     stockThreshold: null,
     tutorialLinks: [],
     barcode: "",
-    stockUnit: "",
+    stockUnit: null, 
     isReturnable: false,
     isWarrantyAvailable: false,
     warrantyPeriodYears: null,
@@ -110,7 +110,7 @@ const EditItem: React.FC<ItemDetailsProps> = ({ itemId }) => {
             stockThreshold: data.stockThreshold ?? null,
             tutorialLinks: data.tutorialLinks || [],
             barcode: data.barcode || "",
-            stockUnit: data.stockUnit || "",
+            stockUnit: data.stockUnitId || null,
             isReturnable: data.isReturnable ?? false,
             isWarrantyAvailable: data.isWarrantyAvailable ?? false,
             warrantyPeriodYears: data.warrantyYears ?? null,
@@ -455,7 +455,6 @@ const EditItem: React.FC<ItemDetailsProps> = ({ itemId }) => {
               value={formData.baseSellingPrice ?? ""}
               onChange={handleChange}
               onKeyDown={preventInvalidNumberInput}
-              disabled={formData.profitToGainInPercentage !== null}
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
@@ -470,7 +469,6 @@ const EditItem: React.FC<ItemDetailsProps> = ({ itemId }) => {
               value={formData.profitToGainInPercentage ?? ""}
               onChange={handleChange}
               onKeyDown={preventInvalidNumberInput}
-              disabled={formData.baseSellingPrice !== null}
               className="w-full p-3 rounded-lg border-2 border-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>

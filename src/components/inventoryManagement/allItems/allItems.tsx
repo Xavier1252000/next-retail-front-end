@@ -136,8 +136,8 @@ const AllItems: React.FC = () => {
       </div>
 
       <table className="w-full borde border-gray-300 text-black">
-        <thead className="bg-purple-200">
-          <tr>
+        <thead className="">
+          <tr className='bg-purple-200 sticky top-[40px] z-10'>
             <th className="border px-4 py-2">SKU</th>
             <th className="border px-4 py-2">Item Name</th>
             <th className="border px-4 py-2">Threshold</th>

@@ -5,6 +5,8 @@ import { serialize } from "cookie";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+console.log("--------------------------------------------------", `${BACKEND_URL}/public/login`)
+
 export async function POST(request: Request) {
     try {
         const requestBody = await request.json();

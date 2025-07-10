@@ -89,7 +89,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <div
         className={`${
-          isSidebarOpen ? "w-70" : "w-16"
+          isSidebarOpen ? "w-60" : "w-16"
         } transition-all duration-300 overflow-hidden bg-white border-r border-gray-200 text-gray-900 h-full p-4 shadow-md rounded-r-2xl flex flex-col`}
       >
         {/* Logo */}
@@ -112,7 +112,7 @@ export default function Sidebar() {
                 >
                   <Link
                     href={module.to}
-                    className="flex items-center gap-2 w-full"
+                    className="flex items-center gap-1 w-full"
                   >
                     {module.icon ? (
                       <Image

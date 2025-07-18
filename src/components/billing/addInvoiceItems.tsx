@@ -38,6 +38,7 @@ interface CreateInvoicePayload {
 export function useCreateInvoice() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const router = useRouter();
 
   const createInvoice = async (
     invoiceItems: InvoiceItemPayload[],
@@ -64,6 +65,7 @@ export function useCreateInvoice() {
         deliveryStatus,
         paymentStatus,
         grandTotal,
+        generationType: "Off Line"
       },
     };
 
@@ -71,7 +73,7 @@ export function useCreateInvoice() {
 
     try {
       setLoading(true);
-      const { response } = await BackendRequest("/api/billing/createInvoice", {
+      const { response, status } = await BackendRequest("/api/billing/createInvoice", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -81,9 +83,10 @@ export function useCreateInvoice() {
 
       const result = response.response;
 
-      if (!result.error && result.status === "Success") {
+      if (!result.error || status === 201 || status === 200) {
         showToast("Invoice generated successfully!", "success");
-        return result.data; // Return full invoice + invoiceItems
+        router.push("/billing/invoice/"+result.data.invoice.id);
+        return ;
       } else {
         showToast(result.message || "Failed to generate invoice", "error");
         return null;

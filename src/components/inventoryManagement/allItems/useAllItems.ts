@@ -62,7 +62,7 @@ export function useAllItems({ storeId}: UseAllItemsProps) {
     }
     
     try {
-      const {response, status} = await BackendRequest("/api/billing/createInvoice", {
+      const {response, status} = await BackendRequest("/api/inventoryManagement/allItems", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

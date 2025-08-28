@@ -3,6 +3,27 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #print-section,
+  #print-section * {
+    visibility: visible;
+  }
+
+  #print-section {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+
 @theme inline {
   --animate-aurora: aurora 60s linear infinite;
   --color-sidebar-ring: var(--sidebar-ring);

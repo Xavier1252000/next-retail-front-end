@@ -55,10 +55,9 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
         );
 
         const result = response.response;
-        console.log(result)
         if (!result.error && status === 200) {
           showToast('Invoice fetched successfully!', 'success');
-          setInvoiceData(result.data);
+          setInvoiceData(result?.data);
         } else {
           showToast(result.message || 'Failed to fetch invoice', 'error');
         }
@@ -83,7 +82,7 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
   const { invoice, invoiceItems } = invoiceData;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white shadow-md rounded-md print:p-0 print:shadow-none print:bg-white">
+    <div id="print-section" className="p-6 max-w-4xl mt-13 mx-auto bg-white shadow-md rounded-md print:p-0 print:shadow-none print:bg-white">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">Invoice #{invoice.serialNo}</h2>
@@ -125,7 +124,7 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
                 <th className="border px-3 py-2 text-left">Item ID</th>
                 <th className="border px-3 py-2 text-right">Quantity</th>
                 <th className="border px-3 py-2 text-right">Base Price</th>
-                <th className="border px-3 py-2 text-right">Tax</th>
+                <th className="border px-3 py-2 text-right">Tax Per Item</th>
                 <th className="border px-3 py-2 text-right">Final Price</th>
               </tr>
             </thead>
@@ -134,9 +133,9 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="border px-3 py-2">{item.itemId}</td>
                   <td className="border px-3 py-2 text-right">{item.quantity}</td>
-                  <td className="border px-3 py-2 text-right">₹{item.itemBasePrice.toFixed(2)}</td>
-                  <td className="border px-3 py-2 text-right">₹{item.taxPerItem.toFixed(2)}</td>
-                  <td className="border px-3 py-2 text-right font-semibold">₹{item.finalPrice.toFixed(2)}</td>
+                  <td className="border px-3 py-2 text-right">₹{item?.itemBasePrice != null ? item.itemBasePrice.toFixed(2):"0.00"}</td>
+                  <td className="border px-3 py-2 text-right">₹{item.taxPerItem != null ? item.taxPerItem.toFixed(2) : "0.00"}</td>
+                  <td className="border px-3 py-2 text-right font-semibold">₹{item.finalPrice != null ? item.finalPrice.toFixed(2) : "0.00"}</td>
                 </tr>
               ))}
             </tbody>

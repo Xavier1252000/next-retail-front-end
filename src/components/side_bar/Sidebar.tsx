@@ -58,7 +58,7 @@ export default function Sidebar() {
 
       setUserPermissions(formattedPermissions);
     }
-  }, [loading, response]);
+  }, [loading, response, isLoggedIn]);
 
   useEffect(() => {
     if (!isLoggedIn) {

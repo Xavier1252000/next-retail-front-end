@@ -14,17 +14,17 @@ export default function LayoutShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar only if logged in */}
       {isLoggedIn && (
-        <div className={`transition-all duration-300 ${isOpen ? "w-[20vw]" : "w-[50]"}`}>
+        <div
+          className={`transition-all duration-300 shrink-0 ${
+            isOpen ? "w-55" : "w-10"
+          }`}
+        >
           <Sidebar />
         </div>
       )}
 
-      {/* Main Content adjusts based on sidebar */}
-      <div
-        className={`flex-grow flex flex-col transition-all duration-300 overflow-auto ${
-          isLoggedIn ? "ml-0" : ""
-        }`}
-      >
+      {/* Main Content */}
+      <div className="flex flex-col flex-grow overflow-auto">
         <NavbarDemo />
         <main className="p-4 flex-grow">{children}</main>
       </div>

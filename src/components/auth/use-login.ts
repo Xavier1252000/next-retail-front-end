@@ -3,6 +3,7 @@ import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext";
+import Cookies from "js-cookie";
 
 interface FormDataType {
     username?: string;
@@ -35,7 +36,6 @@ export const useLogin = () => {
             body: JSON.stringify(formData),
         });
         if(status === 200){
-            localStorage.setItem("userId", response.response.data.user.id);
             setIsLoggedIn(true);
         }
 

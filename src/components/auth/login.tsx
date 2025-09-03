@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { useLogin } from "./use-login";
+import { useAuth } from "@/context/authContext";
 
 const Login = () => {
     const {
@@ -11,6 +12,8 @@ const Login = () => {
         isSubmitting,
         togglePasswordVisibility,
     } = useLogin();
+    const{isLoggedIn} = useAuth();
+    if(isLoggedIn) return null;
     
     return (
         <section className="bg-gray-50 h-screen">

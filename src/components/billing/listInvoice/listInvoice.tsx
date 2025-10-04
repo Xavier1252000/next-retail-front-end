@@ -62,11 +62,11 @@ const useInvoices = (storeId: string, index: number, limit: number) => {
           body: JSON.stringify(payload),
         });
 
-        
+
 
         if (status === 200) {
           setInvoices(response?.response.data || []);
-        //   setTotalCount(response.response. || 0); // Assume backend returns totalCount
+          //   setTotalCount(response.response. || 0); // Assume backend returns totalCount
         } else {
           setError(response.response.message || 'Something went wrong');
         }
@@ -130,13 +130,26 @@ const AllInvoices: React.FC = () => {
 
   const addInvoice = () => router.push('/billing/addInvoice');
   const editInvoice = (id: string) => router.push(`/billing/editInvoice/${id}`);
-  const viewDetails = (id: string) => router.push("/billing/invoice/"+id);
+  const viewDetails = (id: string) => router.push("/billing/invoice/" + id);
+
+  async function getInvoiceFilters(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
+    const { response, status } = await BackendRequest('/api/billing/getInvoiceFilters/', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        console.log(response)
+        if(status ===200){
+          const invoiceFilters = response?.response?.data;
+        }
+  }
+
 
   return (
     <div className="relative p-4 rounded-lg bg-white text-purple-900 mt-13">
       <button
         onClick={addInvoice}
-        className="absolute top-6 right-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+        className="absolute top-1 right-4 bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
       >
         Add New Invoice
       </button>
@@ -154,6 +167,13 @@ const AllInvoices: React.FC = () => {
             className="border rounded px-2 py-1 w-24"
           />
         </div>
+
+        <button
+          onClick={getInvoiceFilters}
+          className="absolute right-4 bg-white  border border-purple-400 text-purple-500 px-1.5 py-1 rounded hover:border-purple-700 transition"
+        >
+          Adapt filters
+        </button>
       </div>
 
       {loading ? (

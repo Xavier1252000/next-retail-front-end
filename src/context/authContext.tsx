@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleSetIsLoggedIn = (value: boolean) => {
     setIsLoggedIn(value);
-    Cookies.set("isLoggedIn", value.toString(), { path: "/" });
     if (!value) {
       router.push("/login");
     }

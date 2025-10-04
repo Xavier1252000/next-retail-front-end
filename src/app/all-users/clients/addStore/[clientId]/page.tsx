@@ -1,13 +1,20 @@
-import AddStoreForm from "@/components/users/addClientDetails/store/addStore"
+import AddStoreForm from "@/components/users/addClientDetails/store/addStore";
 
-function Page({ params }: { params: { clientId: string } }) {
-  const clientId = params.clientId;
+// Define SegmentParams to match the auto-generated type
+type SegmentParams = { clientId: string };
+
+interface PageProps {
+  params: Promise<SegmentParams>;
+  searchParams?: Promise<any>;
+}
+
+async function Page({ params }: PageProps) {
+  const resolvedParams = await params; // Resolve the Promise
+  const clientId = resolvedParams.clientId;
 
   return (
     <div>
-      <h1>
-        <AddStoreForm clientId={clientId} />
-      </h1>
+      <AddStoreForm clientId={clientId} />
     </div>
   );
 }

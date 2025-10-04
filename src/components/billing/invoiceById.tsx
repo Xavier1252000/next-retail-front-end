@@ -6,21 +6,26 @@ import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
 
 interface InvoiceItem {
   id: string;
+  itemName: string;
   itemId: string;
   quantity: number;
   itemBasePrice: number;
   totalBasePrice: number;
   taxPerItem: number;
+  discountPerItem: number;
   totalTax: number;
   finalPricePerItem: number;
   finalPrice: number;
+  totalDiscount: number;
+  discountDetails: object[];
+  taxDetails: object[];
 }
 
 interface Invoice {
   id: string;
+  storeName: string;
   serialNo: number;
   storeId: string;
-  createdOn: string;
   grandTotal: number;
   grossAmount: number;
   netAmount: number;
@@ -28,6 +33,14 @@ interface Invoice {
   invoiceDiscountAmount: number;
   paymentStatus: string;
   deliveryStatus: string;
+  customerName: string;
+  customerContactNo: string;
+  generationType: string;
+  createdOn: string;
+  createdBy: string;
+  createdByName: String;
+  modifiedOn: string;
+  modifiedBy: string;
 }
 
 interface InvoiceResponse {
@@ -85,8 +98,9 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
     <div id="print-section" className="p-6 max-w-4xl mt-13 mx-auto bg-white shadow-md rounded-md print:p-0 print:shadow-none print:bg-white">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Invoice #{invoice.serialNo}</h2>
-          <p className="text-gray-600">Created on: {new Date(invoice.createdOn).toLocaleString()}</p>
+          <h2 className="text-2xl font-bold">{invoice.storeName}</h2>
+          <h2 className="text-l font-bold">Invoice #{invoice.serialNo}</h2>
+          <p className="text-gray-600">Billing on: {new Date(invoice.createdOn).toLocaleString()}, Billing by: {invoice.createdByName}</p>
         </div>
         <button
           onClick={handlePrint}
@@ -96,23 +110,24 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
         </button>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-4">
-        <div>
-          <h3 className="font-semibold">Store ID:</h3>
-          <p>{invoice.storeId}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Payment Status:</h3>
-          <p>{invoice.paymentStatus}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Delivery Status:</h3>
-          <p>{invoice.deliveryStatus}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold">Invoice ID:</h3>
-          <p>{invoice.id}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-4">
+
+        <p className="text-base">
+          <span className="font-semibold">Payment Status:</span>{' '}
+          <span className="font-normal">{invoice.paymentStatus}</span>
+        </p>
+        <p className="text-base">
+          <span className="font-semibold">Delivery Status:</span>{' '}
+          <span className="font-normal">{invoice.deliveryStatus}</span>
+        </p>
+        <p className="text-base">
+          <span className="font-semibold">Customer Name:</span>{' '}
+          <span className="font-normal">{invoice.customerName}</span>
+        </p>
+        <p className="text-base">
+          <span className="font-semibold">Customer Contact No:</span>{' '}
+          <span className="font-normal">{invoice.customerContactNo}</span>
+        </p>
       </div>
 
       <div className="mt-6">
@@ -121,23 +136,59 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
           <table className="w-full border text-sm">
             <thead className="bg-purple-100">
               <tr>
-                <th className="border px-3 py-2 text-left">Item ID</th>
+                <th className="border px-3 py-2 text-left">Items</th>
                 <th className="border px-3 py-2 text-right">Quantity</th>
                 <th className="border px-3 py-2 text-right">Base Price</th>
-                <th className="border px-3 py-2 text-right">Tax Per Item</th>
+                <th className="border px-3 py-2 text-right">Tax/Item</th>
+                <th className="border px-3 py-2 text-right">Total Tax</th>
+                <th className="border px-3 py-2 text-right">Discount/Item</th>
+                <th className="border px-3 py-2 text-right">Total Discount</th>
+                <th className="border px-3 py-2 text-right">Final price/item</th>
                 <th className="border px-3 py-2 text-right">Final Price</th>
               </tr>
             </thead>
             <tbody>
               {invoiceItems.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2">{item.itemId}</td>
+                  <td className="border px-3 py-2">{item.itemName ? item.itemName : "Total"}</td>
                   <td className="border px-3 py-2 text-right">{item.quantity}</td>
-                  <td className="border px-3 py-2 text-right">₹{item?.itemBasePrice != null ? item.itemBasePrice.toFixed(2):"0.00"}</td>
+                  <td className="border px-3 py-2 text-right">₹{item?.itemBasePrice != null ? item.itemBasePrice.toFixed(2) : "0.00"}</td>
                   <td className="border px-3 py-2 text-right">₹{item.taxPerItem != null ? item.taxPerItem.toFixed(2) : "0.00"}</td>
+                  <td className="border px-3 py-2 text-right">₹{item.totalTax? item.totalTax : item.taxPerItem?(item.taxPerItem*item.quantity).toFixed(2):null}</td>
+                  <td className="border px-3 py-2 text-right">₹{item.discountPerItem != null ? item.discountPerItem.toFixed(2) : "0.00"}</td>
+                  <td className="border px-3 py-2 text-right">₹{item.totalDiscount != null ? item.totalDiscount.toFixed(2) : "0.00"}</td>
+                  <td className="border px-3 py-2 text-right">₹{item.finalPricePerItem != null ? item.finalPricePerItem.toFixed(2) : (item.finalPrice / item.quantity).toFixed(2)}</td>
                   <td className="border px-3 py-2 text-right font-semibold">₹{item.finalPrice != null ? item.finalPrice.toFixed(2) : "0.00"}</td>
                 </tr>
               ))}
+              {/* Total Row */}
+              <tr className="bg-gray-100 font-semibold">
+                <td className="border px-3 py-2">Total</td>
+                <td className="border px-3 py-2 text-right">
+                  {invoiceItems.reduce((sum, item) => sum + (item.quantity || 0), 0)}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{invoiceItems.reduce((sum, item) => sum + (item.itemBasePrice || 0), 0).toFixed(2)}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{invoiceItems.reduce((sum, item) => sum + (item.taxPerItem || 0), 0).toFixed(2)}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{invoiceItems.reduce((sum, item) => sum + (item.totalTax || 0), 0).toFixed(2)}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{invoiceItems.reduce((sum, item) => sum + (item.discountPerItem || 0), 0).toFixed(2)}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  ₹{invoiceItems.reduce((sum, item) => sum + (item.totalDiscount || 0), 0).toFixed(2)}
+                </td>
+                <td className="border px-3 py-2 text-right">
+                  
+                </td>
+                <td className="border px-3 py-2 text-right font-bold">
+                  ₹{invoiceItems.reduce((sum, item) => sum + (item.finalPrice || 0), 0).toFixed(2)}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -146,15 +197,15 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
       <div className="mt-6 flex justify-end text-right">
         <div className="space-y-1 text-sm w-full max-w-sm">
           <div className="flex justify-between">
-            <span>Gross Amount:</span>
-            <span>₹{invoice.grossAmount.toFixed(2)}</span>
+            <span>Net Amount:</span>
+            <span>₹{invoice.netAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Tax:</span>
+            <span>Additional Tax:</span>
             <span>₹{invoice.invoiceTaxAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Discount:</span>
+            <span>Additional Discount:</span>
             <span>₹{invoice.invoiceDiscountAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">

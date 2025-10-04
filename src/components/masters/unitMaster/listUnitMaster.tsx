@@ -76,48 +76,43 @@ const AllUnitMasters: React.FC = () => {
   }
 
   return (
-    <div className="relative p-4 mt-13">
+  <div className="mt-10 overflow-x-auto bg-white shadow-md rounded-xl p-4">
+    <div className="flex justify-between items-center mb-4">
+      <h1 className="text-2xl font-semibold text-purple-600">Unit Masters</h1>
       <button
+        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
         onClick={handleAddNewUnit}
-        className="absolute top-5 right-4 mb-1 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
       >
         Add New Unit
       </button>
-      <h1 className="text-2xl font-bold mb-4">All Units</h1>
-      {isLoading ? (
-        <p>Loading units...</p>
-      ) : (
-        <table className="w-full border border-gray-300">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border px-4 py-2">Serial</th>
-              <th className="border px-4 py-2">Unit Name</th>
-              <th className="border px-4 py-2">Unit Notation</th>
-            </tr>
-          </thead>
-          <tbody>
-            {units.length > 0 ? (
-              units.map((unit, index) => (
-                <tr key={unit.id}>
-                  <td className="border px-4 py-2">{index + 1}</td>
-                  <td className="border px-4 py-2">{unit.unit}</td>
-                  <td className="border px-4 py-2">{unit.unitNotation}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={3} className="text-center p-4">
-                  No units found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-
-        </table>
-
-      )}
     </div>
-  );
+
+    {isLoading ? (
+      <div className="text-center text-gray-500 py-10">Loading units...</div>
+    ) : units.length === 0 ? (
+      <div className="text-center text-gray-500 py-10">No unit master records found.</div>
+    ) : (
+      <table className="min-w-full text-sm text-left text-gray-800">
+        <thead className="bg-purple-500 text-white">
+          <tr>
+            <th className="px-4 py-2">S.No</th>
+            <th className="px-4 py-2">Unit Name</th>
+            <th className="px-4 py-2">Unit Notation</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-purple-300">
+          {units.map((unit, index) => (
+            <tr key={unit.id} className="hover:bg-purple-100 transition">
+              <td className="px-4 py-2">{index + 1}</td>
+              <td className="px-4 py-2">{unit.unit}</td>
+              <td className="px-4 py-2">{unit.unitNotation}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </div>
+);
 };
 
 export default AllUnitMasters;

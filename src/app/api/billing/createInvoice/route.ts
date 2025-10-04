@@ -8,7 +8,7 @@ export async function POST(request: NextRequest){
     const requestBody = await request.json();
     
     try {
-        const response = await axios.post(`${BACKEND_URL}/order/generate-invoice`,
+        const response = await axios.post(`${BACKEND_URL}/billing/generate-invoice`,
             requestBody,
             {
                 headers:{

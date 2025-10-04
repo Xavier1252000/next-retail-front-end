@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { useToast } from "@/context/toast-context";
 import UpdateTaxMaster from "../updateTaxMaster/updateTaxMaster";
+import editIcon from '../../../../icons/editIcon.png';
+import detailsIcon from '../../../../icons/detailsIcon.png';
+import Image from 'next/image';
 
 export interface TaxMaster {
   id: string;
@@ -81,7 +84,7 @@ const TaxMasterTable: React.FC = () => {
         body: JSON.stringify({ data: { id: taxMasterId } }),
       });
 
-      if(response.ok){
+      if (response.ok) {
         setData((prev) => prev.filter((item) => item.id !== taxMasterId));
       }
     } catch (error) {
@@ -146,10 +149,29 @@ const TaxMasterTable: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-4 py-2">{tax.description || "-"}</td>
-                <td className="px-4 py-2">
-                  <button className="bg-purple-500 hover:bg-purple-700 text-white px-2 py-1 rounded-lg text-sm font-medium mx-1" onClick={() => router.push(`/masters/taxMaster/updateTaxMaster/${tax.id}`)}>Update</button>
-                  <button className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-sm font-medium" onClick={() => deleteTaxMaster(tax.id)}>Delete</button>
-                </td>
+                <td className="px-4 py-2 grid grid-cols-1">
+                  <div className="flex gap-2">
+                    {/* Edit Icon with Hover Label */}
+                    <div className="relative group">
+                      <Image src={editIcon} alt="Edit icon" width={25} height={25}
+                        onClick={() => router.push(`/masters/taxMaster/updateTaxMaster/${tax.id}`)}
+                        className="hover:scale-120 transition-transform" />
+                      <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                        Edit
+                      </div>
+                    </div>
+
+                    {/* Details Icon with Hover Label */}
+                    <div className="relative group">
+                      <Image src={detailsIcon} alt="Details icon" width={25} height={25}
+                        onClick={() => deleteTaxMaster(tax.id)}
+                        className="hover:scale-120 transition-transform" />
+                      <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-5 group-hover:opacity-500">
+                        Details
+                      </div>
+                    </div>
+                  </div>
+                  </td>
               </tr>
             ))}
           </tbody>

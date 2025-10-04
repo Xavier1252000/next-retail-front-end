@@ -69,8 +69,6 @@ export function useCreateInvoice() {
       },
     };
 
-    console.log("Sending payload to create invoice:", payload);
-
     try {
       setLoading(true);
       const { response, status } = await BackendRequest("/api/billing/createInvoice", {
@@ -83,7 +81,7 @@ export function useCreateInvoice() {
 
       const result = response.response;
 
-      if (!result.error || status === 201 || status === 200) {
+      if (!result.error && (status === 201 || status === 200)) {
         showToast("Invoice generated successfully!", "success");
         router.push("/billing/invoice/"+result.data.invoice.id);
         return ;
@@ -105,6 +103,8 @@ export function useCreateInvoice() {
 
 // Interface for invoice items in the UI, aligned with API response
 interface InvoiceItemsType {
+  applicableTaxes: string[];
+  discountMasterIds: string[];
   id: string;
   itemName: string;
   quantity: number;
@@ -113,6 +113,8 @@ interface InvoiceItemsType {
   finalPriceForUnit: number;
   baseSellingPriceForUnit: number;
   totalTaxPriceForUnit: number;
+  discountIds: string[];
+  taxIds: string[];
   totalDiscountForUnit: number;
   baseSellingPrice: number;
   totalTaxPrice: number;
@@ -277,6 +279,8 @@ const AddInvoiceItems: React.FC = () => {
                   totalTaxPrice: newItem.totalTaxPrice,
                   totalDiscountPrice: newItem.totalDiscountPrice,
                   finalPrice: newItem.finalPrice,
+                  taxIds: newItem.applicableTaxes,
+                  discountIds: newItem.discountMasterIds
                 },
               ];
             }
@@ -333,6 +337,8 @@ const AddInvoiceItems: React.FC = () => {
             totalTaxPriceForUnit: item.totalTaxPrice,
             totalDiscountForUnit: item.totalDiscountPrice,
             finalPriceForUnit: item.finalPrice,
+            taxIds: item.applicableTaxes, // Map applicableTaxes to taxIds
+            discountIds: item.discountMasterIds, // Map discountMasterIds to discountIds
           },
         ];
       }
@@ -350,9 +356,9 @@ const AddInvoiceItems: React.FC = () => {
         if (item.id !== itemId) return item;
 
         const quantity = item.quantity + 1;
-        const taxPerUnit = item.totalTaxPriceForUnit ?? (item.totalTaxPrice / item.quantity) ?? 0;
-        const discountPerUnit = item.totalDiscountForUnit ?? (item.totalDiscountPrice / item.quantity) ?? 0;
-        const finalPricePerUnit = item.finalPriceForUnit ?? (item.finalPrice / item.quantity) ?? 0;
+        const taxPerUnit = item.totalTaxPriceForUnit ?? (item.totalTaxPrice / item.quantity);
+        const discountPerUnit = item.totalDiscountForUnit ?? (item.totalDiscountPrice / item.quantity);
+        const finalPricePerUnit = item.finalPriceForUnit ?? (item.finalPrice / item.quantity);
 
         return {
           ...item,
@@ -439,10 +445,10 @@ const AddInvoiceItems: React.FC = () => {
       quantity: item.quantity,
       itemBasePrice: Number.parseFloat(item.baseSellingPriceForUnit.toFixed(2)),
       totalBasePrice: Number.parseFloat((item.baseSellingPriceForUnit * item.quantity).toFixed(2)),
-      discountIds: [],
+      discountIds: item.discountIds,
       discountPerItem: Number.parseFloat((item.totalDiscountForUnit || 0).toFixed(2)),
       totalDiscount: Number.parseFloat(((item.totalDiscountForUnit || 0) * item.quantity).toFixed(2)),
-      taxIds: [],
+      taxIds: item.taxIds,
       taxPerItem: Number.parseFloat((item.totalTaxPriceForUnit || 0).toFixed(2)),
       totalTax: Number.parseFloat(((item.totalTaxPriceForUnit || 0) * item.quantity).toFixed(2)),
       finalPricePerItem: Number.parseFloat((item.finalPriceForUnit || 0).toFixed(2)),

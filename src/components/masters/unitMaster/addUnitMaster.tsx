@@ -8,13 +8,19 @@ import { Button } from '@/components/ui/button';
 import Cookies from 'js-cookie';
 
 interface UnitFormDataType {
+  unitMasterId: string | null;
   unitFullForm: string;
   unitNotation: string;
 }
 
-const AddUnitMaster: React.FC = () => {
+type AddUnitMasterProps = {
+  unitMasterId: string;
+};
+
+const AddUnitMaster: React.FC<AddUnitMasterProps> = ({unitMasterId}) => {
   const [isStaff, setIsStaff] = useState<boolean>(false);
   const [formData, setFormData] = useState<UnitFormDataType>({
+    unitMasterId: '',
     unitFullForm: '',
     unitNotation: '',
   });
@@ -51,6 +57,7 @@ const AddUnitMaster: React.FC = () => {
     const storeId = Cookies.get('storeId');
 
     const payload = {
+      unitMasterId: formData.unitMasterId,
       unitFullForm: formData.unitFullForm,
       unitNotation: formData.unitNotation,
       storeIds: isStaff && storeId ? [storeId] : [],
@@ -77,6 +84,36 @@ const AddUnitMaster: React.FC = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+  if (unitMasterId && unitMasterId.trim() !== '') {
+    const fetchUnitData = async () => {
+      try {
+        const { response, status } = await BackendRequest(`/api/masters/unitMaster/unitMasterById/${unitMasterId}`, {
+          method: 'GET',
+        });
+
+        if (status === 200 && response?.response?.statusCode === 200) {
+          const data = response.response.data;
+          setFormData(prev => ({
+            ...prev,
+            unitMasterId: data.id,
+            unitFullForm: data.unit || '',
+            unitNotation: data.unitNotation || '',
+          }));
+        } else {
+          showToast('Failed to fetch unit details.');
+        }
+      } catch (err) {
+        console.error('Error fetching unit data:', err);
+        showToast('Error fetching unit data');
+      }
+    };
+
+    fetchUnitData();
+  }
+}, [unitMasterId]);
+
 
   return (
     <div className="p-6 mt-[3.25rem]">

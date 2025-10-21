@@ -1,9 +1,9 @@
 import axios from "axios";
 import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
-export async function GET(){
+export async function GET(request: NextRequest){
     const token = (await cookies()).get("authToken")?.value;
     
     try {

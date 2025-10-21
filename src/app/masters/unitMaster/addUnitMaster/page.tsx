@@ -4,7 +4,7 @@ import React from 'react'
 function addUnitMaster() {
   return (
     <div>
-      <AddUnitMaster />
+      <AddUnitMaster unitMasterId='' />
     </div>
   )
 }

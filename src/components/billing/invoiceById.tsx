@@ -18,8 +18,9 @@ interface InvoiceItem {
   finalPrice: number;
   totalDiscount: number;
   discountDetails: object[];
-  taxDetails: object[];
+  taxDetails: TaxDetail[];
 }
+
 
 interface Invoice {
   id: string;
@@ -47,6 +48,24 @@ interface InvoiceResponse {
   invoice: Invoice;
   invoiceItems: InvoiceItem[];
 }
+
+export interface TaxDetail {
+  id: string;
+  taxCode: string;            // e.g., "GST-18"
+  taxType: string;            // e.g., "GST"
+  taxPercentage: number;      // e.g., 18
+  applicableOn: string;       // e.g., "items"
+  applicableCategories: string[]; // e.g., ["Surgical Apparatus"]
+  inclusionOnBasePrice: boolean;
+  description: string;
+  storeIds: string[];         // List of store IDs where this tax applies
+  createdOn: string;          // ISO date string
+  modifiedOn: string;
+  createdBy: string;          // User ID
+  modifiedBy: string;
+  active: boolean;
+}
+
 
 function InvoiceById({ invoiceId }: { invoiceId: string }) {
   const { showToast } = useToast();
@@ -136,9 +155,11 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
           <table className="w-full border text-sm">
             <thead className="bg-purple-100">
               <tr>
+                <th className="border px-3 py-2 text-left">Sr.</th>
                 <th className="border px-3 py-2 text-left">Items</th>
                 <th className="border px-3 py-2 text-right">Quantity</th>
                 <th className="border px-3 py-2 text-right">Base Price</th>
+                <th className="border px-3 py-2 text-right">Tax Type</th>
                 <th className="border px-3 py-2 text-right">Tax/Item</th>
                 <th className="border px-3 py-2 text-right">Total Tax</th>
                 <th className="border px-3 py-2 text-right">Discount/Item</th>
@@ -148,13 +169,17 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
               </tr>
             </thead>
             <tbody>
-              {invoiceItems.map((item) => (
+              {invoiceItems.map((item, index: number) => (
                 <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2">{index + 1}</td>
                   <td className="border px-3 py-2">{item.itemName ? item.itemName : "Total"}</td>
                   <td className="border px-3 py-2 text-right">{item.quantity}</td>
                   <td className="border px-3 py-2 text-right">₹{item?.itemBasePrice != null ? item.itemBasePrice.toFixed(2) : "0.00"}</td>
+                  <td className="border px-3 py-2 text-right"> {Array.isArray(item?.taxDetails) && item.taxDetails.length > 0
+                    ? item.taxDetails.map(t => `${t.taxCode} (${t.taxPercentage}%)`).join(', ')
+                    : ""}</td>
                   <td className="border px-3 py-2 text-right">₹{item.taxPerItem != null ? item.taxPerItem.toFixed(2) : "0.00"}</td>
-                  <td className="border px-3 py-2 text-right">₹{item.totalTax? item.totalTax : item.taxPerItem?(item.taxPerItem*item.quantity).toFixed(2):null}</td>
+                  <td className="border px-3 py-2 text-right">₹{item.totalTax ? item.totalTax : item.taxPerItem ? (item.taxPerItem * item.quantity).toFixed(2) : null}</td>
                   <td className="border px-3 py-2 text-right">₹{item.discountPerItem != null ? item.discountPerItem.toFixed(2) : "0.00"}</td>
                   <td className="border px-3 py-2 text-right">₹{item.totalDiscount != null ? item.totalDiscount.toFixed(2) : "0.00"}</td>
                   <td className="border px-3 py-2 text-right">₹{item.finalPricePerItem != null ? item.finalPricePerItem.toFixed(2) : (item.finalPrice / item.quantity).toFixed(2)}</td>
@@ -183,7 +208,13 @@ function InvoiceById({ invoiceId }: { invoiceId: string }) {
                   ₹{invoiceItems.reduce((sum, item) => sum + (item.totalDiscount || 0), 0).toFixed(2)}
                 </td>
                 <td className="border px-3 py-2 text-right">
-                  
+
+                </td>
+                <td className="border px-3 py-2 text-right">
+
+                </td>
+                <td className="border px-3 py-2 text-right">
+
                 </td>
                 <td className="border px-3 py-2 text-right font-bold">
                   ₹{invoiceItems.reduce((sum, item) => sum + (item.finalPrice || 0), 0).toFixed(2)}

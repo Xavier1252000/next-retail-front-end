@@ -54,7 +54,6 @@ const UpdateTaxMaster: React.FC<UpdateTaxMasterProps> = ({ taxMasterId }) => {
           }
         );
         
-        console.log("-----------------------------------", status)
         const tax = response?.response?.data;
         
 

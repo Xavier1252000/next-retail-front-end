@@ -91,6 +91,10 @@ const AllInvoices: React.FC = () => {
   const [index, setIndex] = useState(0);
   const [limit, setLimit] = useState(10);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [selectedInvFilters, setSelectedInvFilters] = useState<String[]>([]);
+  const [allInvFilters, setAllInvFilters] = useState<String[]>();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [wait, setWaiting] = useState(false);
 
   const router = useRouter();
 
@@ -133,16 +137,31 @@ const AllInvoices: React.FC = () => {
   const viewDetails = (id: string) => router.push("/billing/invoice/" + id);
 
   async function getInvoiceFilters(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
+    if (showDropdown === true) { setShowDropdown(false); return }
     const { response, status } = await BackendRequest('/api/billing/getInvoiceFilters/', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
 
-        console.log(response)
-        if(status ===200){
-          const invoiceFilters = response?.response?.data;
-        }
+    console.log(response)
+    if (status === 200) {
+      setAllInvFilters(response?.response?.data);
+      setShowDropdown(true);
+    }
+    setWaiting(false);
   }
+
+
+  const toggleFilter = (filter: string) => {
+    if (selectedInvFilters.includes(filter)) {
+      setSelectedInvFilters(selectedInvFilters.filter((f) => f !== filter));
+    } else {
+      setSelectedInvFilters([...selectedInvFilters, filter]);
+    }
+  };
+
+
+
 
 
   return (
@@ -157,24 +176,88 @@ const AllInvoices: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4">Invoices (Page {index + 1} of {totalPages})</h2>
 
       <div className="mb-4 flex items-center gap-6">
-        <div className="flex flex-col">
-          <label className="text-sm font-semibold mb-1">Invoices per page</label>
-          <input
-            type="number"
-            min={1}
-            value={limit}
-            onChange={handleLimitChange}
-            className="border rounded px-2 py-1 w-24"
-          />
+        <div className="relative">
+          <button
+            onClick={getInvoiceFilters}
+            className="bg-white border border-purple-400 text-purple-500 px-2 py-1 rounded hover:border-purple-700 transition"
+          >
+            Adapt filters
+          </button>
+
+          {showDropdown && (
+            <div className="absolute top-full mt-1 left-0 w-48 bg-white border border-gray-300 rounded shadow-lg z-20">
+              <ul className="p-2 max-h-48 overflow-auto">
+                {!allInvFilters || allInvFilters.length === 0 ? (
+                  <li className="text-gray-500 text-center py-2">No filters found</li>
+                ) : (
+                  allInvFilters.map((filter, idx) => {
+                    const filterStr = String(filter);
+                    const safeId = `filter-${filterStr.replace(/\s+/g, '-').toLowerCase()}`;
+                    return (
+                      <li key={safeId || idx} className="flex items-center space-x-2 py-1">
+                        <input
+                          type="checkbox"
+                          id={safeId}
+                          checked={selectedInvFilters.includes(filterStr)}
+                          onChange={() => toggleFilter(filterStr)}
+                          className="cursor-pointer"
+                        />
+                        <label htmlFor={safeId} className="cursor-pointer">
+                          {filterStr}
+                        </label>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+
+              <div className="flex justify-between px-2 pb-2">
+                <button
+                  onClick={() => setShowDropdown(false)}
+                  className="bg-red-500 text-white px-1 py-0.5 rounded hover:bg-red-600 transition"
+                >
+                  X
+                </button>
+                <button
+                  onClick={() => setShowDropdown(false)}
+                  className="bg-purple-600 text-white px-1 py-0.5 rounded hover:bg-purple-700 transition"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        <button
-          onClick={getInvoiceFilters}
-          className="absolute right-4 bg-white  border border-purple-400 text-purple-500 px-1.5 py-1 rounded hover:border-purple-700 transition"
-        >
-          Adapt filters
-        </button>
+
+
+        {/* Input fields for selected filters */}
+        {selectedInvFilters.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-4">
+            {selectedInvFilters.map((filter) => {
+              const safeId = `filter-input-${filter.replace(/\s+/g, '-').toLowerCase()}`;
+              return (
+                <div key={safeId} className="flex flex-col">
+                  <label htmlFor={safeId} className="text-sm font-semibold mb-1 capitalize">
+                    {filter}
+                  </label>
+                  <input
+                    id={safeId}
+                    type="text"
+                    placeholder={`Enter ${filter}`}
+                    className="border rounded px-2 py-1 w-48"
+
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+
+
+
 
       {loading ? (
         <div className="text-center py-6">Loading...</div>
@@ -185,8 +268,8 @@ const AllInvoices: React.FC = () => {
       ) : (
         <table className="w-full border border-gray-300 text-sm">
           <thead>
-            <tr className="bg-purple-200">
-              {['Serial No', 'Customer', 'Contact', 'Gross', 'Net', 'Tax', 'Discount', 'Total', 'Payment', 'Delivery', 'Created', 'Actions'].map(h => (
+            <tr className="bg-purple-200 sticky top-13 ">
+              {['Sr.', 'Customer', 'Contact', 'Gross', 'Net', 'Tax', 'Discount', 'Total', 'Payment', 'Delivery', 'Created', 'Actions'].map(h => (
                 <th key={h} className="border px-2 py-1">{h}</th>
               ))}
             </tr>

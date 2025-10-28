@@ -1,20 +1,11 @@
 import UpdateTaxMaster from "@/components/masters/taxMaster/updateTaxMaster/updateTaxMaster";
 
-// Define SegmentParams to match the auto-generated type
-type SegmentParams = { id: string };
-
-interface PageProps {
-  params: Promise<SegmentParams>;
-  searchParams?: Promise<any>;
-}
-
-async function Page({ params }: PageProps) {
-  const resolvedParams = await params; // Resolve the Promise
-  const id = resolvedParams.id;
+async function Page({params}:{params:Promise<{taxMasterId:string}>}) {
+  const taxMasterId = (await params).taxMasterId;
 
   return (
     <div>
-      <UpdateTaxMaster taxMasterId={id} />
+      <UpdateTaxMaster taxMasterId={taxMasterId} />
     </div>
   );
 }

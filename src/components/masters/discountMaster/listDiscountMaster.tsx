@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface DiscountMaster {
   id: string;
@@ -18,14 +19,13 @@ interface DiscountMaster {
   discountCouponCode: string;
 }
 
-const storeId = "6818e9de026b845f07cc9714"; // Make dynamic if needed
-
 const DiscountMasterTable: React.FC = () => {
   const [discounts, setDiscounts] = useState<DiscountMaster[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
   useEffect(() => {
+    const storeId = Cookies.get('storeId');
     const fetchDiscountMasters = async () => {
       try {
         const res = await fetch("/api/masters/discountMaster/getDiscountMaster", {

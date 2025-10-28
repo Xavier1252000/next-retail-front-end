@@ -97,6 +97,10 @@ const TaxMasterTable: React.FC = () => {
     return <div className="text-purple-600">Loading tax masters...</div>;
   }
 
+  function handleEditTaxMaster(id: string): void {
+    router.push(`/masters/taxMaster/updateTaxMaster/${id}`);
+  }
+
   return (
     <div className="mt-10 overflow-x-auto bg-white shadow-md rounded-xl p-4">
       <div className="flex justify-between items-center mb-4">
@@ -152,13 +156,13 @@ const TaxMasterTable: React.FC = () => {
                 <td className="px-4 py-2 grid grid-cols-1">
                   <div className="flex gap-2">
                     {/* Edit Icon with Hover Label */}
-                    <div className="relative group">
-                      <Image src={editIcon} alt="Edit icon" width={25} height={25}
-                        onClick={() => router.push(`/masters/taxMaster/updateTaxMaster/${tax.id}`)}
-                        className="hover:scale-120 transition-transform" />
-                      <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        Edit
-                      </div>
+                      <div className="relative group">
+                        <Image src={editIcon} alt="Edit icon" width={25} height={25}
+                          onClick={() => handleEditTaxMaster(tax.id)}
+                          className="hover:scale-120 transition-transform" />
+                        <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                          Edit
+                        </div>
                     </div>
 
                     {/* Details Icon with Hover Label */}

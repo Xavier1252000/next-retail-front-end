@@ -76,7 +76,6 @@ function AddTaxMasterForm() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     try {
-      console.log(formData)
       const { response, status } = await BackendRequest("/api/masters/taxMaster/addTaxMaster", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -85,12 +84,11 @@ function AddTaxMasterForm() {
 
       if (status === 201 || response?.response?.statusCode === 201) {
         router.push("/masters/taxMaster/taxMasterByStoreId");
-        showToast(response?.response.data.message);
+        showToast(response?.response.message, "success");
       } else {
         showToast(response?.response?.message || "Failed to add item");
       }
     } catch (err) {
-      console.log(err)
       showToast("something went wrong while adding taxMaster")
     }
 

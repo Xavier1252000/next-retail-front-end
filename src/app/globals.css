@@ -20,6 +20,28 @@
     width: 100%;
     margin: 0;
     padding: 0;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .print-thermal {
+    width: 80mm !important;
+    min-width: 80mm !important;
+    max-width: 80mm !important;
+    padding: 2mm !important;
+    margin: 0 !important;
+    color: black !important;
+    background: white !important;
+    font-size: 10px !important;
+  }
+
+  .print-a4 {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    padding: 10mm !important;
+    margin: 0 auto !important;
+    color: black !important;
+    background: white !important;
   }
 }
 

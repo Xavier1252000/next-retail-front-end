@@ -1,11 +1,26 @@
 "use client";
-import React, { useState, useRef, useEffect } from 'react';
+
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Cookies from 'js-cookie';
 import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
 import { useToast } from '@/context/toast-context';
-import {useRouter} from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import {
+  Barcode,
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  Receipt,
+  ShoppingCart,
+  User,
+  Phone,
+  Tag,
+  DollarSign,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
 
-// Interface for invoice item payload sent to the backend
 export interface InvoiceItemPayload {
   itemId: string;
   quantity: number;
@@ -21,20 +36,44 @@ export interface InvoiceItemPayload {
   finalPrice: number;
 }
 
-// Interface for create invoice payload
-interface CreateInvoicePayload {
-  invoiceItems: InvoiceItemPayload[];
-  customerName: string;
-  customerContactNo: string;
-  discountOverTotalPrice: number;
-  taxOverTotalPrice: number;
-  couponCode: string;
-  deliveryStatus: string;
-  paymentStatus: string;
-  grandTotal: number;
+export interface TaxBreakdownItem {
+  taxId: string;
+  taxCode: string;
+  taxType: string;
+  taxPercentage: number;
+  calculatedTaxAmount: number;
+  inclusionOnBasePrice?: boolean;
 }
 
-// Hook to handle invoice creation
+export interface DiscountBreakdownItem {
+  discountId: string;
+  discountName: string;
+  couponCode: string;
+  discountPercentage: number;
+  calculatedDiscountAmount: number;
+}
+
+export interface InvoiceItemUI {
+  id: string;
+  itemName: string;
+  skuCode: string | number;
+  barcode?: string;
+  quantity: number;
+  costPrice: number;
+  baseSellingPrice: number; // Unit base price
+  totalBasePrice: number;
+  totalTaxPrice: number; // For line item
+  totalDiscountPrice: number; // For line item
+  finalPrice: number; // Line item final price
+  taxIds: string[];
+  discountIds: string[];
+  taxBreakdown?: TaxBreakdownItem[];
+  discountBreakdown?: DiscountBreakdownItem[];
+  isWarrantyAvailable?: boolean;
+  warrantyPeriod?: string;
+  isReturnable?: boolean;
+}
+
 export function useCreateInvoice() {
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
@@ -73,20 +112,20 @@ export function useCreateInvoice() {
       setLoading(true);
       const { response, status } = await BackendRequest("/api/billing/createInvoice", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const result = response.response;
+      const result = response?.response;
 
-      if (!result.error && (status === 201 || status === 200)) {
+      if (!result?.error && (status === 201 || status === 200)) {
         showToast("Invoice generated successfully!", "success");
-        router.push("/billing/invoice/"+result.data.invoice.id);
-        return ;
+        if (result?.data?.invoice?.id) {
+          router.push("/billing/invoice/" + result.data.invoice.id);
+        }
+        return result;
       } else {
-        showToast(result.message || "Failed to generate invoice", "error");
+        showToast(result?.message || "Failed to generate invoice", "error");
         return null;
       }
     } catch (error) {
@@ -101,31 +140,6 @@ export function useCreateInvoice() {
   return { createInvoice, loading };
 }
 
-// Interface for invoice items in the UI, aligned with API response
-interface InvoiceItemsType {
-  applicableTaxes: string[];
-  discountMasterIds: string[];
-  id: string;
-  itemName: string;
-  quantity: number;
-  skuCode: string | number; // API returns number, UI treats as string
-  costPrice: number;
-  finalPriceForUnit: number;
-  baseSellingPriceForUnit: number;
-  totalTaxPriceForUnit: number;
-  discountIds: string[];
-  taxIds: string[];
-  totalDiscountForUnit: number;
-  baseSellingPrice: number;
-  totalTaxPrice: number;
-  totalDiscountPrice: number;
-  finalPrice: number;
-  isWarrantyAvailable: boolean;
-  warrantyPeriod: string;
-  isReturnable: boolean;
-}
-
-// Debounce hook for input throttling
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -137,7 +151,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-const AddInvoiceItems: React.FC = () => {
+export default function AddInvoiceItems() {
   const { createInvoice, loading } = useCreateInvoice();
   const [itemName, setItemName] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -147,24 +161,99 @@ const AddInvoiceItems: React.FC = () => {
   const [discountOverTotalPrice, setDiscountOverTotalPrice] = useState('0');
   const [taxOverTotalPrice, setTaxOverTotalPrice] = useState('0');
   const [couponCode, setCouponCode] = useState('');
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItemsType[]>([]);
-  const [itemOptions, setItemOptions] = useState<InvoiceItemsType[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState('Paid');
+  const [deliveryStatus, setDeliveryStatus] = useState('Delivered');
+
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItemUI[]>([]);
+  const [itemOptions, setItemOptions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const itemNameInputRef = useRef<HTMLInputElement>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
-  const debouncedItemName = useDebounce(itemName, 100);
-  const debouncedBarcode = useDebounce(barcode, 300);
-  const debouncedSkuCode = useDebounce(skuCode, 700);
-  const { showToast } = useToast();
-  const router = useRouter();
+  const itemNameInputRef = useRef<HTMLInputElement>(null);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
+  const debouncedItemName = useDebounce(itemName, 150);
+  const debouncedBarcode = useDebounce(barcode, 300);
+  const debouncedSkuCode = useDebounce(skuCode, 400);
+
+  const { showToast } = useToast();
   const storeId = Cookies.get("storeId");
 
-  // Calculate grand total
-  const grandTotal = invoiceItems.reduce((sum, item) => sum + item.finalPrice, 0);
+  // Dynamic real-time totals computation
+  const { subtotalBase, totalTaxes, totalDiscounts, itemsFinalTotal, grandTotal } = useMemo(() => {
+    const subtotal = invoiceItems.reduce((acc, item) => acc + item.totalBasePrice, 0);
+    const taxes = invoiceItems.reduce((acc, item) => acc + item.totalTaxPrice, 0);
+    const discounts = invoiceItems.reduce((acc, item) => acc + item.totalDiscountPrice, 0);
+    const finalItems = invoiceItems.reduce((acc, item) => acc + item.finalPrice, 0);
 
-  // Fetch items by name for autocomplete
+    const invoiceDiscount = parseFloat(discountOverTotalPrice) || 0;
+    const invoiceTax = parseFloat(taxOverTotalPrice) || 0;
+
+    const total = Math.max(0, finalItems - invoiceDiscount + invoiceTax);
+
+    return {
+      subtotalBase: subtotal,
+      totalTaxes: taxes,
+      totalDiscounts: discounts,
+      itemsFinalTotal: finalItems,
+      grandTotal: total,
+    };
+  }, [invoiceItems, discountOverTotalPrice, taxOverTotalPrice]);
+
+  // Dynamic recalculator helper for an item given a quantity
+  const calculateLineItem = (baseItem: any, qty: number): InvoiceItemUI => {
+    const baseSellingPrice = baseItem.baseSellingPrice || 0;
+    const totalBasePrice = baseSellingPrice * qty;
+
+    // Calculate taxes dynamically based on taxBreakdown percentages or totalTaxPrice
+    let unitTax = 0;
+    if (baseItem.taxBreakdown && Array.isArray(baseItem.taxBreakdown) && baseItem.taxBreakdown.length > 0) {
+      unitTax = baseItem.taxBreakdown.reduce((sum: number, tb: TaxBreakdownItem) => {
+        const rate = tb.taxPercentage || 0;
+        return sum + (baseSellingPrice * rate) / 100;
+      }, 0);
+    } else if (baseItem.totalTaxPrice != null) {
+      unitTax = baseItem.totalTaxPrice;
+    }
+
+    // Calculate discounts dynamically
+    let unitDiscount = 0;
+    if (baseItem.discountBreakdown && Array.isArray(baseItem.discountBreakdown) && baseItem.discountBreakdown.length > 0) {
+      unitDiscount = baseItem.discountBreakdown.reduce((sum: number, db: DiscountBreakdownItem) => {
+        const rate = db.discountPercentage || 0;
+        return sum + (baseSellingPrice * rate) / 100;
+      }, 0);
+    } else if (baseItem.totalDiscountPrice != null) {
+      unitDiscount = baseItem.totalDiscountPrice;
+    }
+
+    const totalTaxPrice = unitTax * qty;
+    const totalDiscountPrice = unitDiscount * qty;
+    const finalPrice = totalBasePrice + totalTaxPrice - totalDiscountPrice;
+
+    return {
+      id: baseItem.id,
+      itemName: baseItem.itemName,
+      skuCode: baseItem.skuCode,
+      barcode: baseItem.barcode,
+      quantity: qty,
+      costPrice: baseItem.costPrice || 0,
+      baseSellingPrice: baseSellingPrice,
+      totalBasePrice: Number.parseFloat(totalBasePrice.toFixed(2)),
+      totalTaxPrice: Number.parseFloat(totalTaxPrice.toFixed(2)),
+      totalDiscountPrice: Number.parseFloat(totalDiscountPrice.toFixed(2)),
+      finalPrice: Number.parseFloat(finalPrice.toFixed(2)),
+      taxIds: baseItem.applicableTaxes || baseItem.taxIds || [],
+      discountIds: baseItem.discountMasterIds || baseItem.discountIds || [],
+      taxBreakdown: baseItem.taxBreakdown,
+      discountBreakdown: baseItem.discountBreakdown,
+      isWarrantyAvailable: baseItem.isWarrantyAvailable,
+      warrantyPeriod: baseItem.warrantyPeriod,
+      isReturnable: baseItem.isReturnable,
+    };
+  };
+
+  // Autocomplete search by Item Name
   useEffect(() => {
     const fetchItemName = async () => {
       if (!debouncedItemName.trim()) {
@@ -173,11 +262,10 @@ const AddInvoiceItems: React.FC = () => {
         return;
       }
 
-      const payload = { data: { storeId, itemName: debouncedItemName } };
-
       try {
+        const payload = { data: { storeId, itemName: debouncedItemName } };
         const { response, status } = await BackendRequest(
-          `/api/inventoryManagement/getItemByNameSkuBarcode`,
+          "/api/inventoryManagement/getItemByNameSkuBarcode",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -185,29 +273,14 @@ const AddInvoiceItems: React.FC = () => {
           }
         );
 
-        if(status !== 200 && response.status !== 200){
-            router.push("/")
-            showToast("Session expired, please login", "error");
-        }
-
-        const items = response.response.data;
-        if (Array.isArray(items)) {
-          setItemOptions(items.map(item => ({
-            ...item,
-            skuCode: String(item.skuCode), // Convert to string for UI
-            quantity: 1,
-            baseSellingPriceForUnit: item.baseSellingPrice,
-            totalTaxPriceForUnit: item.totalTaxPrice,
-            totalDiscountForUnit: item.totalDiscountPrice,
-            finalPriceForUnit: item.finalPrice,
-          })));
+        if (status === 200 && Array.isArray(response?.response?.data)) {
+          setItemOptions(response.response.data);
           setShowSuggestions(true);
         } else {
           setItemOptions([]);
           setShowSuggestions(false);
         }
       } catch (err) {
-        console.error("Error fetching itemName items:", err);
         setItemOptions([]);
         setShowSuggestions(false);
       }
@@ -216,7 +289,7 @@ const AddInvoiceItems: React.FC = () => {
     fetchItemName();
   }, [debouncedItemName, storeId]);
 
-  // Fetch items by barcode or SKU code
+  // Barcode / SKU Scan listener
   useEffect(() => {
     const fetchByCode = async () => {
       const value = debouncedBarcode || debouncedSkuCode;
@@ -229,7 +302,7 @@ const AddInvoiceItems: React.FC = () => {
 
       try {
         const { response, status } = await BackendRequest(
-          `/api/inventoryManagement/getItemByNameSkuBarcode`,
+          "/api/inventoryManagement/getItemByNameSkuBarcode",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -237,62 +310,30 @@ const AddInvoiceItems: React.FC = () => {
           }
         );
 
-        if(status !== 200 && response.status !== 200){
-            router.push("/")
-            showToast("Session expired, please login", "error");
-        }
+        const items = response?.response?.data;
+        if (status === 200 && Array.isArray(items) && items.length === 1) {
+          const rawItem = items[0];
 
-        const items = response.response.data;
-
-        if (Array.isArray(items) && items.length === 1) {
-          const newItem = items[0];
           setInvoiceItems((prev) => {
-            const existingIndex = prev.findIndex((item) => item.id === newItem.id);
-
+            const existingIndex = prev.findIndex((i) => i.id === rawItem.id);
             if (existingIndex !== -1) {
-              const updatedItems = [...prev];
-              const currentItem = updatedItems[existingIndex];
-              const quantity = currentItem.quantity + 1;
-
-              updatedItems[existingIndex] = {
-                ...currentItem,
-                quantity,
-                baseSellingPriceForUnit: currentItem.baseSellingPriceForUnit || newItem.baseSellingPrice,
-                totalTaxPrice: (currentItem.totalTaxPriceForUnit || newItem.totalTaxPrice) * quantity,
-                totalDiscountPrice: (currentItem.totalDiscountForUnit || newItem.totalDiscountPrice) * quantity,
-                finalPrice: (currentItem.finalPriceForUnit || newItem.finalPrice) * quantity,
-              };
-
-              return updatedItems;
+              const updated = [...prev];
+              const cur = updated[existingIndex];
+              updated[existingIndex] = calculateLineItem(rawItem, cur.quantity + 1);
+              return updated;
             } else {
-              return [
-                ...prev,
-                {
-                  ...newItem,
-                  skuCode: String(newItem.skuCode), // Convert to string for UI
-                  quantity: 1,
-                  baseSellingPriceForUnit: newItem.baseSellingPrice,
-                  totalTaxPriceForUnit: newItem.totalTaxPrice,
-                  totalDiscountForUnit: newItem.totalDiscountPrice,
-                  finalPriceForUnit: newItem.finalPrice,
-                  baseSellingPrice: newItem.baseSellingPrice,
-                  totalTaxPrice: newItem.totalTaxPrice,
-                  totalDiscountPrice: newItem.totalDiscountPrice,
-                  finalPrice: newItem.finalPrice,
-                  taxIds: newItem.applicableTaxes,
-                  discountIds: newItem.discountMasterIds
-                },
-              ];
+              return [...prev, calculateLineItem(rawItem, 1)];
             }
           });
 
-          setItemOptions([]);
-          setItemName("");
           setBarcode("");
           setSkuCode("");
+          setItemName("");
+          setItemOptions([]);
+          showToast(`Added: ${rawItem.itemName}`, "success");
         }
       } catch (err) {
-        console.error("Error fetching barcode/skuCode items:", err);
+        console.error("Barcode lookup failed:", err);
       }
     };
 
@@ -301,410 +342,573 @@ const AddInvoiceItems: React.FC = () => {
     }
   }, [debouncedBarcode, debouncedSkuCode, storeId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    if (name === 'itemName') setItemName(value);
-    if (name === 'barcode') setBarcode(value);
-    if (name === 'skuCode') setSkuCode(value);
-    if (name === 'customerName') setCustomerName(value);
-    if (name === 'customerContactNo') setCustomerContactNo(value);
-    if (name === 'discountOverTotalPrice') setDiscountOverTotalPrice(value);
-    if (name === 'taxOverTotalPrice') setTaxOverTotalPrice(value);
-    if (name === 'couponCode') setCouponCode(value);
-  };
-
-  const handleSelectItem = (item: InvoiceItemsType) => {
+  const handleSelectItem = (rawItem: any) => {
     setInvoiceItems((prev) => {
-      const existingIndex = prev.findIndex((i) => i.id === item.id);
-
+      const existingIndex = prev.findIndex((i) => i.id === rawItem.id);
       if (existingIndex !== -1) {
-        const updatedItems = [...prev];
-        updatedItems[existingIndex] = {
-          ...updatedItems[existingIndex],
-          quantity: updatedItems[existingIndex].quantity + 1,
-          totalTaxPrice: (updatedItems[existingIndex].totalTaxPriceForUnit || 0) * (updatedItems[existingIndex].quantity + 1),
-          totalDiscountPrice: (updatedItems[existingIndex].totalDiscountForUnit || 0) * (updatedItems[existingIndex].quantity + 1),
-          finalPrice: (updatedItems[existingIndex].finalPriceForUnit || 0) * (updatedItems[existingIndex].quantity + 1),
-        };
-        return updatedItems;
+        const updated = [...prev];
+        const cur = updated[existingIndex];
+        updated[existingIndex] = calculateLineItem(rawItem, cur.quantity + 1);
+        return updated;
       } else {
-        return [
-          ...prev,
-          {
-            ...item,
-            quantity: 1,
-            baseSellingPriceForUnit: item.baseSellingPrice,
-            totalTaxPriceForUnit: item.totalTaxPrice,
-            totalDiscountForUnit: item.totalDiscountPrice,
-            finalPriceForUnit: item.finalPrice,
-            taxIds: item.applicableTaxes, // Map applicableTaxes to taxIds
-            discountIds: item.discountMasterIds, // Map discountMasterIds to discountIds
-          },
-        ];
+        return [...prev, calculateLineItem(rawItem, 1)];
       }
     });
 
-    setItemName('');
+    setItemName("");
     setItemOptions([]);
     setShowSuggestions(false);
-    setTimeout(() => itemNameInputRef.current?.focus(), 0);
+    setTimeout(() => itemNameInputRef.current?.focus(), 50);
   };
 
   const handleIncrement = (itemId: string) => {
-    setInvoiceItems((prevItems) =>
-      prevItems.map((item) => {
+    setInvoiceItems((prev) =>
+      prev.map((item) => {
         if (item.id !== itemId) return item;
-
-        const quantity = item.quantity + 1;
-        const taxPerUnit = item.totalTaxPriceForUnit ?? (item.totalTaxPrice / item.quantity);
-        const discountPerUnit = item.totalDiscountForUnit ?? (item.totalDiscountPrice / item.quantity);
-        const finalPricePerUnit = item.finalPriceForUnit ?? (item.finalPrice / item.quantity);
-
-        return {
-          ...item,
-          quantity,
-          totalTaxPrice: taxPerUnit * quantity,
-          totalDiscountPrice: discountPerUnit * quantity,
-          finalPrice: finalPricePerUnit * quantity,
-          totalTaxPriceForUnit: taxPerUnit,
-          totalDiscountForUnit: discountPerUnit,
-          finalPriceForUnit: finalPricePerUnit,
-        };
+        return calculateLineItem(item, item.quantity + 1);
       })
     );
   };
 
   const handleDecrement = (itemId: string) => {
-    setInvoiceItems((prevItems) =>
-      prevItems
-        .map((item) =>
-          item.id === itemId && item.quantity > 1
-            ? {
-                ...item,
-                quantity: item.quantity - 1,
-                totalTaxPrice: (item.totalTaxPriceForUnit || 0) * (item.quantity - 1),
-                totalDiscountPrice: (item.totalDiscountForUnit || 0) * (item.quantity - 1),
-                finalPrice: (item.finalPriceForUnit || 0) * (item.quantity - 1),
-              }
-            : item
-        )
+    setInvoiceItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.id !== itemId) return item;
+          if (item.quantity <= 1) return item;
+          return calculateLineItem(item, item.quantity - 1);
+        })
         .filter((item) => item.quantity > 0)
     );
+  };
+
+  const handleQuantityInput = (itemId: string, newQtyStr: string) => {
+    const qty = parseInt(newQtyStr, 10);
+    if (isNaN(qty) || qty < 1) return;
+
+    setInvoiceItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+        return calculateLineItem(item, qty);
+      })
+    );
+  };
+
+  const handleDelete = (itemId: string) => {
+    setInvoiceItems((prev) => prev.filter((item) => item.id !== itemId));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showSuggestions || itemOptions.length === 0) return;
 
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex((prevIndex) =>
-          prevIndex < itemOptions.length - 1 ? prevIndex + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex((prevIndex) =>
-          prevIndex > 0 ? prevIndex - 1 : itemOptions.length - 1
-        );
-        break;
-      case 'Enter':
-        if (highlightedIndex >= 0 && highlightedIndex < itemOptions.length) {
-          handleSelectItem(itemOptions[highlightedIndex]);
-        }
-        break;
-      default:
-        break;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev < itemOptions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : itemOptions.length - 1));
+    } else if (e.key === "Enter") {
+      if (highlightedIndex >= 0 && highlightedIndex < itemOptions.length) {
+        handleSelectItem(itemOptions[highlightedIndex]);
+      }
     }
-  };
-
-  const handleDelete = (itemId: string) => {
-    setInvoiceItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
   };
 
   const handleCreateInvoice = async () => {
     if (invoiceItems.length === 0) {
-      showToast('Please add at least one item to the invoice.');
+      showToast("Please add at least one item to the invoice.", "warn");
       return;
     }
 
-    // Validate discountOverTotalPrice and taxOverTotalPrice
     const discount = parseFloat(discountOverTotalPrice) || 0;
     const tax = parseFloat(taxOverTotalPrice) || 0;
-    if (isNaN(discount) || discount < 0) {
-      showToast('Please enter a valid discount over total price.', "warn");
-      return;
-    }
-    if (isNaN(tax) || tax < 0) {
-      showToast('Please enter a valid tax over total price.', "warn");
-      return;
-    }
 
     const formattedInvoiceItems: InvoiceItemPayload[] = invoiceItems.map((item) => ({
       itemId: item.id,
       quantity: item.quantity,
-      itemBasePrice: Number.parseFloat(item.baseSellingPriceForUnit.toFixed(2)),
-      totalBasePrice: Number.parseFloat((item.baseSellingPriceForUnit * item.quantity).toFixed(2)),
+      itemBasePrice: Number.parseFloat(item.baseSellingPrice.toFixed(2)),
+      totalBasePrice: Number.parseFloat(item.totalBasePrice.toFixed(2)),
       discountIds: item.discountIds,
-      discountPerItem: Number.parseFloat((item.totalDiscountForUnit || 0).toFixed(2)),
-      totalDiscount: Number.parseFloat(((item.totalDiscountForUnit || 0) * item.quantity).toFixed(2)),
+      discountPerItem: Number.parseFloat((item.totalDiscountPrice / item.quantity).toFixed(2)),
+      totalDiscount: Number.parseFloat(item.totalDiscountPrice.toFixed(2)),
       taxIds: item.taxIds,
-      taxPerItem: Number.parseFloat((item.totalTaxPriceForUnit || 0).toFixed(2)),
-      totalTax: Number.parseFloat(((item.totalTaxPriceForUnit || 0) * item.quantity).toFixed(2)),
-      finalPricePerItem: Number.parseFloat((item.finalPriceForUnit || 0).toFixed(2)),
+      taxPerItem: Number.parseFloat((item.totalTaxPrice / item.quantity).toFixed(2)),
+      totalTax: Number.parseFloat(item.totalTaxPrice.toFixed(2)),
+      finalPricePerItem: Number.parseFloat((item.finalPrice / item.quantity).toFixed(2)),
       finalPrice: Number.parseFloat(item.finalPrice.toFixed(2)),
     }));
 
-    try {
-      const result = await createInvoice(
-        formattedInvoiceItems,
-        customerName,
-        customerContactNo,
-        discount,
-        tax,
-        couponCode,
-        'Not Delivered',
-        'Pending',
-        Number.parseFloat(grandTotal.toFixed(2))
-      );
+    const result = await createInvoice(
+      formattedInvoiceItems,
+      customerName,
+      customerContactNo,
+      discount,
+      tax,
+      couponCode,
+      deliveryStatus,
+      paymentStatus,
+      Number.parseFloat(grandTotal.toFixed(2))
+    );
 
-      if (result) {
-        setCustomerName('');
-        setCustomerContactNo('');
-        setDiscountOverTotalPrice('0');
-        setTaxOverTotalPrice('0');
-        setCouponCode('');
-        setInvoiceItems([]);
-      }
-    } catch (err) {
-      console.error('Error creating invoice:', err);
-      showToast('Failed to create invoice. Please try again.', "error");
+    if (result) {
+      setInvoiceItems([]);
+      setCustomerName("");
+      setCustomerContactNo("");
+      setDiscountOverTotalPrice("0");
+      setTaxOverTotalPrice("0");
+      setCouponCode("");
     }
   };
 
   return (
-    <div className="mt-12 px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold text-purple-600">Add Invoice Items</h1>
+    <div className="w-full max-w-7xl mx-auto space-y-6 transition-colors duration-200">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <Receipt className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            POS Quick Billing
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Scan barcode, search item, and issue verified retail tax invoices with real-time tax breakdown
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (invoiceItems.length > 0) {
+                if (confirm("Hold current cart and start a new sale?")) {
+                  localStorage.setItem("surge_held_cart", JSON.stringify(invoiceItems));
+                  setInvoiceItems([]);
+                  showToast("Cart parked on hold!", "warn");
+                }
+              } else {
+                const held = localStorage.getItem("surge_held_cart");
+                if (held) {
+                  setInvoiceItems(JSON.parse(held));
+                  localStorage.removeItem("surge_held_cart");
+                  showToast("Resumed parked cart!", "success");
+                } else {
+                  showToast("No parked cart to resume", "warn");
+                }
+              }
+            }}
+            className="px-3.5 py-2 rounded-xl text-xs font-medium border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer"
+          >
+            {invoiceItems.length > 0 ? "Park / Hold Cart" : "Resume Parked Cart"}
+          </button>
+        </div>
       </div>
 
-      <div className="max-w-8xl mx-auto p-8 shadow-md rounded-2xl space-y-6">
-        <div className="flex gap-5">
-          <div>
-            <label className="block text-sm font-medium text-purple-700 mb-1">Barcode</label>
-            <input
-              type="text"
-              name="barcode"
-              value={barcode}
-              onChange={handleChange}
-              autoFocus
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+      {/* Grid: Search & Customer row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Item Scanning & Autocomplete */}
+        <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground pb-2 border-b border-border/60">
+            <ShoppingCart className="w-4 h-4 text-blue-500" />
+            <span>Product Scan & Lookup</span>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-purple-700 mb-1">SKU Code</label>
-            <input
-              type="text"
-              name="skuCode"
-              value={skuCode}
-              onChange={handleChange}
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Barcode scanner input */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Barcode className="w-3.5 h-3.5 text-blue-500" />
+                <span>Barcode (Scanner)</span>
+              </label>
+              <input
+                type="text"
+                ref={barcodeInputRef}
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                placeholder="Scan or type barcode..."
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+              />
+            </div>
+
+            {/* SKU Code */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-emerald-500" />
+                <span>SKU Code</span>
+              </label>
+              <input
+                type="text"
+                value={skuCode}
+                onChange={(e) => setSkuCode(e.target.value)}
+                placeholder="Enter SKU..."
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+              />
+            </div>
+
+            {/* Item Name Autocomplete */}
+            <div className="relative">
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Item Name Search</span>
+              </label>
+              <input
+                type="text"
+                ref={itemNameInputRef}
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type item title..."
+                autoComplete="off"
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+              />
+
+              {showSuggestions && itemOptions.length > 0 && (
+                <ul className="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-border bg-card shadow-2xl z-50 py-1 text-sm">
+                  {itemOptions.map((item, index) => (
+                    <li
+                      key={item.id}
+                      onMouseDown={() => handleSelectItem(item)}
+                      className={`px-3.5 py-2.5 cursor-pointer flex items-center justify-between transition-colors ${
+                        index === highlightedIndex
+                          ? "bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-medium"
+                          : "hover:bg-muted/70 text-foreground"
+                      }`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{item.itemName}</span>
+                        <span className="text-xs text-muted-foreground">
+                          SKU: {item.skuCode} | Stock: {item.itemStock ?? "N/A"}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-foreground">
+                          ₹{item.finalPrice?.toFixed(2) ?? "0.00"}
+                        </span>
+                        {item.totalTaxPrice > 0 && (
+                          <span className="block text-[11px] text-emerald-600 dark:text-emerald-400">
+                            Incl. Tax ₹{item.totalTaxPrice?.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right 1 Col: Customer Details */}
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground pb-2 border-b border-border/60">
+            <User className="w-4 h-4 text-emerald-500" />
+            <span>Customer Information</span>
           </div>
 
-          <div className="relative w-full">
-            <label className="block text-sm font-medium text-purple-700 mb-1">Item Name</label>
-            <input
-              type="text"
-              name="itemName"
-              value={itemName}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              ref={itemNameInputRef}
-              autoComplete="off"
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Customer Name
+              </label>
+              <div className="relative">
+                <User className="w-3.5 h-3.5 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Walk-in Customer / Hospital"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+                />
+              </div>
+            </div>
 
-            {showSuggestions && itemOptions.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-purple-300 rounded mt-1 max-h-48 overflow-y-auto shadow-lg">
-                {itemOptions.map((item, index) => (
-                  <li
-                    key={item.id}
-                    onMouseDown={() => handleSelectItem(item)}
-                    className={`px-4 py-2 cursor-pointer hover:bg-purple-100 ${index === highlightedIndex ? 'bg-purple-200' : ''}`}
-                  >
-                    {item.itemName} (SKU: {item.skuCode})
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Contact Number
+              </label>
+              <div className="relative">
+                <Phone className="w-3.5 h-3.5 absolute left-3 top-3 text-muted-foreground pointer-events-none" />
+                <input
+                  type="text"
+                  value={customerContactNo}
+                  onChange={(e) => setCustomerContactNo(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <table className="w-full border border-gray-300 text-black mt-6">
-        <thead className="bg-purple-200">
-          <tr>
-            <th className="border px-4 py-2">Serial</th>
-            <th className="border px-4 py-2">SKU</th>
-            <th className="border px-4 py-2">Item Name</th>
-            <th className="border px-4 py-2">Quantity</th>
-            <th className="border px-4 py-2">Warranty</th>
-            <th className="border px-4 py-2">Returnable</th>
-            <th className="border px-4 py-2">Unit Price</th>
-            <th className="border px-4 py-2">Tax</th>
-            <th className="border px-4 py-2">Discount</th>
-            <th className="border px-4 py-2">Unit Final Price</th>
-            <th className="border px-4 py-2">Final Price (₹)</th>
-            <th className="border px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {invoiceItems.length > 0 ? (
-            invoiceItems.map((item, index) => (
-              <tr key={item.id} className="hover:bg-purple-100">
-                <td className="border px-4 py-2">{index + 1}</td>
-                <td className="border px-4 py-2">{item.skuCode}</td>
-                <td className="border px-4 py-2">{item.itemName}</td>
-                <td className="border px-4 py-2">{item.quantity}</td>
-                <td className="border px-4 py-2">{item.isWarrantyAvailable ? "Yes" : "No"} - {item.warrantyPeriod}</td>
-                <td className="border px-4 py-2">{item.isReturnable ? "Yes" : "No"}</td>
-                <td className="border px-4 py-2">₹{item.baseSellingPriceForUnit.toFixed(2)}</td>
-                <td className="border px-4 py-2">₹{(item.totalTaxPriceForUnit || 0).toFixed(2)}</td>
-                <td className="border px-4 py-2">₹{(item.totalDiscountForUnit || 0).toFixed(2)}</td>
-                <td className="border px-4 py-2">₹{(item.finalPriceForUnit || 0).toFixed(2)}</td>
-                <td className="border px-4 py-2">₹{item.finalPrice.toFixed(2)}</td>
-                <td className="border px-4 py-2 flex gap-2 items-center justify-center">
-                  <button
-                    onClick={() => handleDecrement(item.id)}
-                    className="px-2 bg-gray-200 rounded hover:bg-gray-300"
-                    disabled={loading}
-                  >
-                    -
-                  </button>
-                  <span>{item.quantity}</span>
-                  <button
-                    onClick={() => handleIncrement(item.id)}
-                    className="px-2 bg-gray-200 rounded hover:bg-gray-300"
-                    disabled={loading}
-                  >
-                    +
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="ml-2 text-red-500 hover:underline"
-                    disabled={loading}
-                  >
-                    Delete
-                  </button>
-                </td>
+      {/* Main Billing Table */}
+      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium text-xs uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3.5">#</th>
+                <th className="px-4 py-3.5">Item Description</th>
+                <th className="px-4 py-3.5">Unit Base</th>
+                <th className="px-4 py-3.5">Tax (GST)</th>
+                <th className="px-4 py-3.5">Discount</th>
+                <th className="px-4 py-3.5 text-center">Quantity</th>
+                <th className="px-4 py-3.5 text-right">Line Total</th>
+                <th className="px-4 py-3.5 text-center">Action</th>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={12} className="text-center p-4">No items added</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {invoiceItems.length > 0 && (
-        <table className="w-full border border-gray-300 text-black mt-6">
-          <tbody>
-            <tr>
-              <td className="border px-4 py-2 font-medium">Tax over total price</td>
-              <td className="border px-4 py-2" colSpan={11}>₹{Number.parseFloat(taxOverTotalPrice || '0').toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td className="border px-4 py-2 font-medium">Discount over total price</td>
-              <td className="border px-4 py-2" colSpan={11}>₹{Number.parseFloat(discountOverTotalPrice || '0').toFixed(2)}</td>
-            </tr>
-            <tr>
-              <td className="border px-4 py-2 font-medium">Grand Total</td>
-              <td className="border px-4 py-2" colSpan={11}>₹{grandTotal.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-      )}
-
-      <div className="max-w-8xl mx-auto p-8 shadow-md rounded-2xl space-y-6">
-        <div className="flex gap-5">
-          <div className="w-full">
-            <label className="block text-sm font-medium text-purple-700 mb-1">Customer Name</label>
-            <input
-              type="text"
-              name="customerName"
-              value={customerName}
-              onChange={handleChange}
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter customer name (optional)"
-            />
-          </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-purple-700 mb-1">Contact Number</label>
-            <input
-              type="tel"
-              name="customerContactNo"
-              value={customerContactNo}
-              onChange={handleChange}
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter contact number (optional)"
-              pattern="[0-9]{10}"
-              title="Please enter a valid 10-digit phone number"
-            />
-          </div>
-        </div>
-        <div className="flex gap-5">
-          <div className="w-full">
-            <label className="block text-sm font-medium text-purple-700 mb-1">Discount Over Total Price</label>
-            <input
-              type="number"
-              name="discountOverTotalPrice"
-              value={discountOverTotalPrice}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter discount over total price"
-            />
-          </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-purple-700 mb-1">Tax Over Total Price</label>
-            <input
-              type="number"
-              name="taxOverTotalPrice"
-              value={taxOverTotalPrice}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter tax over total price"
-            />
-          </div>
-          <div className="w-full">
-            <label className="block text-sm font-medium text-purple-700 mb-1">Coupon Code</label>
-            <input
-              type="text"
-              name="couponCode"
-              value={couponCode}
-              onChange={handleChange}
-              className="w-full p-2 border border-purple-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Enter coupon code (optional)"
-            />
-          </div>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {invoiceItems.length > 0 ? (
+                invoiceItems.map((item, index) => {
+                  return (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-4 py-3.5 text-muted-foreground font-mono text-xs">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="font-medium text-foreground">{item.itemName}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                          <span>SKU: {item.skuCode}</span>
+                          {item.barcode && <span>• Barcode: {item.barcode}</span>}
+                          {item.isWarrantyAvailable && (
+                            <span className="text-blue-600 dark:text-blue-400 font-medium">
+                              • Warranty: {item.warrantyPeriod}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 font-mono text-foreground">
+                        ₹{item.baseSellingPrice.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="font-mono text-foreground">
+                          ₹{item.totalTaxPrice.toFixed(2)}
+                        </div>
+                        {item.taxBreakdown && item.taxBreakdown.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {item.taxBreakdown.map((tb, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300"
+                              >
+                                {tb.taxCode} ({tb.taxPercentage}%)
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">0%</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5 font-mono text-foreground">
+                        ₹{item.totalDiscountPrice.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleDecrement(item.id)}
+                            className="p-1 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleQuantityInput(item.id, e.target.value)}
+                            className="w-12 text-center py-1 font-semibold text-sm bg-background border border-input rounded-lg outline-hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleIncrement(item.id)}
+                            className="p-1 rounded-lg border border-border bg-card hover:bg-muted text-foreground transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono font-bold text-foreground">
+                        ₹{item.finalPrice.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item.id)}
+                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-muted-foreground">
+                    <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm font-medium">Cart is empty</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Scan a barcode or search products above to start billing
+                    </p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <button
-        className="float-right mt-5 mb-10 bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition disabled:bg-purple-300"
-        onClick={handleCreateInvoice}
-        disabled={loading}
-      >
-        {loading ? "Creating..." : "Create Invoice"}
-      </button>
+      {/* Checkout Summary Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Payment & Delivery options */}
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4">
+          <h3 className="text-sm font-semibold text-foreground pb-2 border-b border-border/60">
+            Payment & Fulfillment Details
+          </h3>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Payment Status
+              </label>
+              <select
+                value={paymentStatus}
+                onChange={(e) => setPaymentStatus(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+              >
+                <option value="Paid">Paid (Cash / UPI / Card)</option>
+                <option value="Pending">Pending (Credit / Khata)</option>
+                <option value="Partial">Partial Payment</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Delivery Status
+              </label>
+              <select
+                value={deliveryStatus}
+                onChange={(e) => setDeliveryStatus(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors"
+              >
+                <option value="Delivered">Delivered (Handed over in store)</option>
+                <option value="Not Delivered">Not Delivered (Pending Pickup)</option>
+                <option value="Out for delivery">Out for delivery (Courier/Dispatch)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Store Promo Coupon
+              </label>
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="PROMO2026"
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors uppercase font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Invoice Adjustments */}
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs space-y-4">
+          <h3 className="text-sm font-semibold text-foreground pb-2 border-b border-border/60">
+            Overall Adjustments
+          </h3>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Invoice Level Discount (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={discountOverTotalPrice}
+                onChange={(e) => setDiscountOverTotalPrice(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors font-mono"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Extra Tax / Delivery Charge (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={taxOverTotalPrice}
+                onChange={(e) => setTaxOverTotalPrice(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-background border border-input rounded-xl focus:ring-2 focus:ring-blue-500 outline-hidden transition-colors font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Final Grand Total and Action */}
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between space-y-4">
+          <div className="space-y-2.5">
+            <h3 className="text-sm font-semibold text-foreground pb-2 border-b border-border/60">
+              Billing Summary
+            </h3>
+
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Subtotal (Base):</span>
+              <span className="font-mono text-foreground">₹{subtotalBase.toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Dynamic Taxes:</span>
+              <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                +₹{totalTaxes.toFixed(2)}
+              </span>
+            </div>
+
+            {totalDiscounts > 0 && (
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Item Discounts:</span>
+                <span className="font-mono text-rose-500">-₹{totalDiscounts.toFixed(2)}</span>
+              </div>
+            )}
+
+            {parseFloat(discountOverTotalPrice) > 0 && (
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Invoice Discount:</span>
+                <span className="font-mono text-rose-500">
+                  -₹{parseFloat(discountOverTotalPrice).toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-border flex justify-between items-baseline">
+              <span className="text-base font-bold text-foreground">Grand Total:</span>
+              <span className="text-2xl font-mono font-extrabold text-blue-600 dark:text-blue-400">
+                ₹{grandTotal.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={loading || invoiceItems.length === 0}
+            onClick={handleCreateInvoice}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+          >
+            {loading ? (
+              <span>Generating Invoice...</span>
+            ) : (
+              <>
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Complete Sale & Issue Invoice</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default AddInvoiceItems;
+}

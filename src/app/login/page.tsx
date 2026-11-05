@@ -1,12 +1,10 @@
-import React from 'react'
-import Login from '@/components/auth/login'
+import React, { Suspense } from 'react';
+import Login from '@/components/auth/login';
 
-function UserLogin() {
+export default function LoginPage() {
   return (
-    <div>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <Login />
-    </div>
-  )
+    </Suspense>
+  );
 }
-
-export default Login

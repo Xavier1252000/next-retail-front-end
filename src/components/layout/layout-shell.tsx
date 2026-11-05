@@ -11,12 +11,12 @@ export default function LayoutShell({ children }: { children: ReactNode }) {
   const { isLoggedIn } = useAuth();
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
       {/* Sidebar only if logged in */}
       {isLoggedIn && (
         <div
           className={`transition-all duration-300 shrink-0 ${
-            isOpen ? "w-55" : "w-10"
+            isOpen ? "w-60" : "w-16"
           }`}
         >
           <Sidebar />
@@ -24,9 +24,9 @@ export default function LayoutShell({ children }: { children: ReactNode }) {
       )}
 
       {/* Main Content */}
-      <div className="flex flex-col flex-grow overflow-auto">
+      <div className="flex flex-col flex-grow overflow-auto min-w-0">
         <NavbarDemo />
-        <main className="p-4 flex-grow">{children}</main>
+        <main className="pt-16 p-4 md:p-6 flex-grow">{children}</main>
       </div>
     </div>
   );

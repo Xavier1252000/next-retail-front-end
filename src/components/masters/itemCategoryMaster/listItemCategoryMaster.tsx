@@ -1,134 +1,160 @@
 "use client";
 
-import { useToast } from "@/context/toast-context";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { RetailDataTable, Column } from "@/components/ui/retail-data-table";
+import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
+import { FolderTree, Trash2, Edit2, Layers } from "lucide-react";
 
-interface ItemCategoryData{
-    id:string,
-    storeIds: string[],
-    categoryName: string,
-    parentCategoryId: string,
-    description: string
+export interface ItemCategoryData {
+  id: string;
+  storeIds?: string[];
+  categoryName: string;
+  parentCategoryId?: string;
+  description?: string;
 }
 
-const AllItemCategoryMasters: React.FC = () =>{
-    const [categories, setCategories] = useState<ItemCategoryData[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const {showToast} = useToast();
-    const router = useRouter();
-
-  const userRoles = Cookies.get("userRoles");
-  let roles: string[] = [];
-  try {
-    roles = JSON.parse(userRoles || "[]");
-  } catch (err) {
-    console.error("Error parsing userRoles:", err);
-  }
-
-  let payload = {}
-  if (roles.includes("STAFF")) {
-    const storeId = Cookies.get("storeId");
-    payload = {
-      data: {
-        storeIds: [storeId]
-      }
-    };
-  } else {
-    payload = {
-      data: {
-        storeIds: []
-      }
-    }
-  }
-
+export default function AllItemCategoryMasters() {
+  const [categories, setCategories] = useState<ItemCategoryData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { showToast } = useToast();
+  const router = useRouter();
 
   const fetchItemCategories = async () => {
-      setIsLoading(true);
-      try {
-        const { response, status } = await BackendRequest('/api/masters/itemCategoryMaster/getAllItemCategoryMaster', {
-          method: 'POST',
-          headers: {
-          },
-          body: JSON.stringify(payload)
-        });
-        if (status === 200 && response?.response?.statusCode === 200) {
-          setCategories(response?.response?.data || []);
-        } else {
-          showToast('Failed to fetch units');
-        }
-      } catch (error) {
-        showToast('Something went wrong while fetching units');
-      } finally {
-        setIsLoading(false);
-      }
+    setIsLoading(true);
+    const storeId = Cookies.get("storeId");
+    const payload = {
+      data: {
+        storeIds: storeId ? [storeId] : [],
+      },
     };
 
-    useEffect(() => {
-        fetchItemCategories();
-      }, []);
-
-    const addCategoryMaster = () => {
-        router.push("/masters/itemCategoryMaster/addItemCategoryMaster")
+    try {
+      const { response, status } = await BackendRequest(
+        "/api/masters/itemCategoryMaster/getAllItemCategoryMaster",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+      if (status === 200) {
+        setCategories(response?.response?.data || response?.data || []);
+      } else {
+        setCategories([]);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      showToast("Something went wrong while fetching categories", "error");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    return (
-    <div className="mt-10 overflow-x-auto bg-white shadow-md rounded-xl p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold text-purple-600">Category Masters</h1>
-        <button
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-          onClick={addCategoryMaster}
-        >
-          Add New Category Master
-        </button>
-      </div>
+  useEffect(() => {
+    fetchItemCategories();
+  }, []);
 
-      {isLoading ? (
-        <div className="text-center text-gray-500 py-10">Loading categories...</div>
-      ) : categories.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">No category master records found.</div>
-      ) : (
-        <table className="min-w-full text-sm text-left text-gray-800">
-          <thead className="bg-purple-500 text-white">
-            <tr>
-              <th className="px-4 py-2">S.No</th>
-              <th className="px-4 py-2">Category Name</th>
-              <th className="px-4 py-2">Parent Category ID</th>
-              <th className="px-4 py-2">Description</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-purple-300">
-            {categories.map((category, index) => (
-              <tr key={category.id} className="hover:bg-purple-100 transition">
-                <td className="px-4 py-2">{index + 1}</td>
-                <td className="px-4 py-2">{category.categoryName}</td>
-                <td className="px-4 py-2">{category.parentCategoryId || "-"}</td>
-                <td className="px-4 py-2">{category.description || "-"}</td>
-                <td className="px-4 py-2">
-                  <button
-                    className="bg-purple-500 hover:bg-purple-700 text-white px-2 py-1 rounded-lg text-sm font-medium mx-1"
-                    onClick={() => router.push(`/masters/categoryMaster/updateCategoryMaster/${category.id}`)}
-                  >
-                    Update
-                  </button>
-                  <button
-                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded-lg text-sm font-medium"
-                    onClick={() => showToast("Delete logic not implemented yet")}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this category?")) return;
+
+    try {
+      const { status } = await BackendRequest(
+        "/api/masters/itemCategoryMaster/deleteCategoryDirect",
+        {
+          method: "POST",
+          body: JSON.stringify({ id }),
+        }
+      );
+
+      if (status === 200) {
+        showToast("Category deleted successfully", "success");
+        fetchItemCategories();
+      } else {
+        showToast("Failed to delete category", "error");
+      }
+    } catch (error) {
+      showToast("Error deleting category", "error");
+    }
+  };
+
+  const columns: Column<ItemCategoryData>[] = [
+    {
+      key: "categoryName",
+      header: "Category Name",
+      sortable: true,
+      accessor: (item) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-slate-900 dark:text-neutral-100 flex items-center gap-1.5">
+            <FolderTree className="w-3.5 h-3.5 text-blue-500" />
+            {item.categoryName}
+          </span>
+          <span className="text-xs text-slate-400 dark:text-neutral-500">
+            {item.description || "Retail item category"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "parentCategoryId",
+      header: "Parent Category",
+      sortable: true,
+      accessor: (item) => {
+        if (!item.parentCategoryId) {
+          return (
+            <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300">
+              Root Level Category
+            </span>
+          );
+        }
+        return (
+          <span className="px-2 py-0.5 text-xs font-mono rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            Subcategory
+          </span>
+        );
+      },
+    },
+    {
+      key: "description",
+      header: "Description",
+      accessor: (item) => (
+        <span className="text-xs text-slate-600 dark:text-neutral-400">
+          {item.description || "-"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      accessor: (item) => (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => handleDelete(item.id)}
+            className="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+            title="Delete Category"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <RetailDataTable
+        title="Product Categories Master"
+        subtitle="Organize retail inventory hierarchy, product groups, and department classification"
+        data={categories}
+        columns={columns}
+        loading={isLoading}
+        onRefresh={fetchItemCategories}
+        onAddNew={() => router.push("/masters/itemCategoryMaster/addItemCategoryMaster")}
+        addNewLabel="Add Category"
+        searchPlaceholder="Search category name or description..."
+        searchFields={["categoryName", "description"]}
+      />
     </div>
   );
-};
-
-export default AllItemCategoryMasters;
+}

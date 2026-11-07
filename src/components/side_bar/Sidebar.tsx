@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePermissions } from "./use-permissions";
 import { useAuth } from "@/context/authContext";
+import { useUserAccess } from "@/context/permissionsContext";
 import {
   LayoutDashboard,
   ChevronRight,
@@ -36,28 +37,43 @@ const DEFAULT_RETAIL_MODULES: HeadModule[] = [
     to: "/billing/addInvoiceItems",
     subModules: [
       { name: "Quick POS Billing", to: "/billing/addInvoiceItems" },
-      { name: "All Invoices", to: "/billing/listInvoice" },
+      { name: "All Invoices Register", to: "/billing/listInvoice" },
+      { name: "Returns & Credit Notes", to: "/billing/returns" },
     ],
   },
   {
     id: "module-inventory",
-    name: "Inventory",
+    name: "Catalog & Stock",
     to: "/inventoryManagement/allItems",
     subModules: [
       { name: "All Products", to: "/inventoryManagement/allItems" },
+      { name: "Stock & Adjustments", to: "/inventoryManagement/stock" },
+      { name: "Purchase Orders (GRN)", to: "/inventoryManagement/purchaseOrders" },
       { name: "Add New Item", to: "/inventoryManagement/addItem" },
+      { name: "Categories", to: "/masters/itemCategoryMaster/allItemCategoryMasters" },
+      { name: "Units of Measure", to: "/masters/unitMaster/allUnitMasters" },
+      { name: "Price Lists & Tiers", to: "/masters/priceListMaster/allPriceLists" },
+    ],
+  },
+  {
+    id: "module-crm",
+    name: "Customers & Vendors",
+    to: "/masters/customerMaster/allCustomers",
+    subModules: [
+      { name: "Customers CRM", to: "/masters/customerMaster/allCustomers" },
+      { name: "Suppliers / Vendors", to: "/masters/supplierMaster/allSuppliers" },
     ],
   },
   {
     id: "module-masters",
-    name: "Store Masters",
-    to: "/masters/taxMaster/taxMasterByStoreId",
+    name: "Reports & Settings",
+    to: "/reports",
     subModules: [
+      { name: "Daily Audits & X/Z Reports", to: "/reports" },
+      { name: "Store & POS Settings", to: "/settings" },
+      { name: "Stores & Warehouses", to: "/masters/storeMaster/allStores" },
       { name: "Tax Master (GST)", to: "/masters/taxMaster/taxMasterByStoreId" },
-      { name: "Add Tax Rate", to: "/masters/taxMaster/addTaxMaster" },
-      { name: "Discount Master", to: "/masters/discountMaster/allDiscountMasters" },
-      { name: "Categories", to: "/masters/itemCategoryMaster/allItemCategoryMasters" },
-      { name: "Units of Measure", to: "/masters/unitMaster/allUnitMasters" },
+      { name: "Discounts & Coupons", to: "/masters/discountMaster/allDiscountMasters" },
     ],
   },
   {
@@ -73,7 +89,7 @@ const DEFAULT_RETAIL_MODULES: HeadModule[] = [
 
 export default function Sidebar() {
   const { isOpen: isSidebarOpen, toggle } = useSidebar();
-  const { response, loading } = usePermissions();
+  const { can, isSuperAdminOrClient, userPermissions: rawPermissions, loading } = useUserAccess();
   const [userPermissions, setUserPermissions] = useState<HeadModule[]>([]);
   const [openModules, setOpenModules] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
@@ -81,26 +97,23 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (!loading) {
-      const permissions = response?.response?.data?.userPermissions;
-      if (Array.isArray(permissions) && permissions.length > 0) {
-        const formattedPermissions: HeadModule[] = permissions.map(
-          (perm: any, index: number) => ({
-            id: `module-${index}`,
-            name: perm.headModule?.name ?? "Unnamed Module",
-            to: perm.headModule?.to ?? "#",
-            icon: perm.headModule?.icon ?? "",
-            subModules: (perm.subModules ?? []).map((sub: any) => ({
-              name: sub.name ?? "Unnamed Submodule",
-              to: sub.to ?? "#",
-            })),
-          })
-        );
-        setUserPermissions(formattedPermissions);
-      } else {
+      if (isSuperAdminOrClient) {
         setUserPermissions(DEFAULT_RETAIL_MODULES);
+        return;
       }
+
+      // Filter submodules and head modules based on user's granular READ access
+      const filtered = DEFAULT_RETAIL_MODULES.map((head) => {
+        const accessibleSubs = head.subModules.filter((sub) => can(sub.to, "READ"));
+        return {
+          ...head,
+          subModules: accessibleSubs,
+        };
+      }).filter((head) => head.subModules.length > 0 || can(head.to, "READ"));
+
+      setUserPermissions(filtered);
     }
-  }, [loading, response, isLoggedIn]);
+  }, [loading, isSuperAdminOrClient, can, rawPermissions]);
 
   if (!isLoggedIn) return null;
   if (loading) {

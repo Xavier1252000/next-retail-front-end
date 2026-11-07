@@ -2,14 +2,13 @@
 
 import { useToast } from "@/context/toast-context";
 import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
-import { useState, useEffect } from "react";
-import Cookies from "js-cookie";
+import { useState, useEffect, useCallback } from "react";
 
 export interface Permission {
   id: string;
   name: string;
   description: string;
-  active: boolean;
+  active?: boolean;
 }
 
 export interface Module {
@@ -17,13 +16,13 @@ export interface Module {
   name: string;
   to: string;
   serialNo: number;
-  icon: string;
+  icon?: string;
   parentId: string;
-  createdOn: string;
-  modifiedOn: string;
-  createdBy: string;
-  modifiedBy: string;
-  active: boolean;
+  createdOn?: string;
+  modifiedOn?: string;
+  createdBy?: string;
+  modifiedBy?: string;
+  active?: boolean;
 }
 
 export interface ModulePermissionPayload {
@@ -36,13 +35,9 @@ export interface GetUserPermissionsResponseType {
   userPermissions: {
     headModule: Module;
     permissions: string[];
-    subModules: Module[];
+    permissionNames?: string[];
+    subModules: (Module & { permissions?: string[]; permissionNames?: string[] })[];
   }[];
-}
-
-export interface AddOrUpdateUserPermissionsResponseType {
-  userId: string;
-  modulesPermissions: ModulePermissionPayload[];
 }
 
 export const useAddUserPermissions = (userId: string) => {
@@ -61,9 +56,7 @@ export const useAddUserPermissions = (userId: string) => {
       try {
         const { response, status } = await BackendRequest(
           "/api/permissions/getAllPermissions",
-          {
-            method: "GET",
-          }
+          { method: "GET" }
         );
 
         if (status === 200 && response?.response?.data) {
@@ -72,10 +65,7 @@ export const useAddUserPermissions = (userId: string) => {
           showToast("Failed to fetch permissions.", "error");
         }
       } catch (error: any) {
-        showToast(
-          "Error fetching permissions",
-          error.message || error.toString()
-        );
+        showToast("Error fetching permissions", error.message || error.toString());
       }
     };
 
@@ -88,9 +78,7 @@ export const useAddUserPermissions = (userId: string) => {
       try {
         const { response, status } = await BackendRequest(
           "/api/permissions/modules/getAllModules",
-          {
-            method: "GET",
-          }
+          { method: "GET" }
         );
 
         if (status === 200 && response?.response?.data) {
@@ -112,48 +100,45 @@ export const useAddUserPermissions = (userId: string) => {
       setIsLoading(true);
       try {
         const payload = {
-          data: {
-            userId,
-          },
+          data: { userId },
         };
 
         const { response, status } = await BackendRequest(
           "/api/permissions/getUserPermissions",
           {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           }
         );
 
         if (status === 200 && response?.response?.data) {
           const data: GetUserPermissionsResponseType = response.response.data;
-          // Transform the data to ModulePermissionPayload format
-          const transformedPermissions: ModulePermissionPayload[] =
-            data.userPermissions.flatMap((perm) => {
-              const headModulePerm: ModulePermissionPayload = {
-                moduleId: perm.headModule.id,
-                permissionIds: perm.permissions,
-              };
-              const subModulePerms: ModulePermissionPayload[] =
-                perm.subModules.map((subModule) => ({
-                  moduleId: subModule.id,
-                  permissionIds: perm.permissions, // Submodules inherit head module permissions
-                }));
-              return [headModulePerm, ...subModulePerms];
-            });
+          const userPerms = data.userPermissions || [];
+
+          const transformedPermissions: ModulePermissionPayload[] = [];
+          for (const node of userPerms) {
+            if (node.headModule?.id) {
+              transformedPermissions.push({
+                moduleId: node.headModule.id,
+                permissionIds: node.permissions || [],
+              });
+            }
+            for (const sub of node.subModules || []) {
+              if (sub.id) {
+                transformedPermissions.push({
+                  moduleId: sub.id,
+                  permissionIds: sub.permissions || node.permissions || [],
+                });
+              }
+            }
+          }
           setUserModulesPermissions(transformedPermissions);
         } else {
-          showToast("No existing permissions found for user.");
           setUserModulesPermissions([]);
         }
       } catch (error: any) {
-        showToast(
-          "Error fetching user permissions",
-          error.message || error.toString()
-        );
+        showToast("Error fetching user permissions", error.message || error.toString());
         setUserModulesPermissions([]);
       } finally {
         setIsLoading(false);
@@ -165,68 +150,123 @@ export const useAddUserPermissions = (userId: string) => {
     }
   }, [userId, showToast]);
 
-  // Toggle a permission for a specific module
-  const togglePermission = (moduleId: string, permissionId: string) => {
-    setUserModulesPermissions((prev) => {
-      const index = prev.findIndex((mp) => mp.moduleId === moduleId);
-      if (index === -1) {
-        return [...prev, { moduleId, permissionIds: [permissionId] }];
+  // Toggle a permission for a specific module with smart READ auto-inclusion
+  const togglePermission = useCallback(
+    (moduleId: string, permissionId: string) => {
+      const readPerm = allPermissions.find((p) => p.name.toUpperCase() === "READ");
+      const readId = readPerm?.id;
+
+      setUserModulesPermissions((prev) => {
+        const index = prev.findIndex((mp) => mp.moduleId === moduleId);
+        const existingIds = index !== -1 ? prev[index].permissionIds : [];
+        const alreadySelected = existingIds.includes(permissionId);
+
+        let newIds: string[];
+        if (alreadySelected) {
+          newIds = existingIds.filter((id) => id !== permissionId);
+          // If unchecking READ, also clear others since you can't create/update/delete without read
+          if (permissionId === readId) {
+            newIds = [];
+          }
+        } else {
+          newIds = [...existingIds, permissionId];
+          // If checking CREATE, UPDATE, or DELETE, automatically ensure READ is enabled
+          if (readId && !newIds.includes(readId)) {
+            newIds.push(readId);
+          }
+        }
+
+        const updated = [...prev];
+        if (index === -1) {
+          updated.push({ moduleId, permissionIds: newIds });
+        } else {
+          updated[index] = { ...prev[index], permissionIds: newIds };
+        }
+        return updated;
+      });
+    },
+    [allPermissions]
+  );
+
+  // Set quick preset for a specific module: 'full' | 'view' | 'none'
+  const setModulePreset = useCallback(
+    (moduleId: string, preset: "full" | "view" | "none") => {
+      const readPerm = allPermissions.find((p) => p.name.toUpperCase() === "READ");
+      let targetIds: string[] = [];
+
+      if (preset === "full") {
+        targetIds = allPermissions.map((p) => p.id);
+      } else if (preset === "view" && readPerm) {
+        targetIds = [readPerm.id];
+      } else {
+        targetIds = [];
       }
 
-      const existing = prev[index];
-      const alreadySelected = existing.permissionIds.includes(permissionId);
+      setUserModulesPermissions((prev) => {
+        const index = prev.findIndex((mp) => mp.moduleId === moduleId);
+        const updated = [...prev];
+        if (index === -1) {
+          updated.push({ moduleId, permissionIds: targetIds });
+        } else {
+          updated[index] = { moduleId, permissionIds: targetIds };
+        }
+        return updated;
+      });
+    },
+    [allPermissions]
+  );
 
-      const updatedPermissions = alreadySelected
-        ? existing.permissionIds.filter((id) => id !== permissionId)
-        : [...existing.permissionIds, permissionId];
+  // Set global quick preset across all modules: 'full' | 'view' | 'none'
+  const setGlobalPreset = useCallback(
+    (preset: "full" | "view" | "none") => {
+      const readPerm = allPermissions.find((p) => p.name.toUpperCase() === "READ");
+      let defaultIds: string[] = [];
 
-      const updated = [...prev];
-      updated[index] = { ...existing, permissionIds: updatedPermissions };
-      return updated;
-    });
-  };
+      if (preset === "full") {
+        defaultIds = allPermissions.map((p) => p.id);
+      } else if (preset === "view" && readPerm) {
+        defaultIds = [readPerm.id];
+      } else {
+        defaultIds = [];
+      }
+
+      const updated = allModules.map((m) => ({
+        moduleId: m.id,
+        permissionIds: defaultIds,
+      }));
+
+      setUserModulesPermissions(updated);
+    },
+    [allModules, allPermissions]
+  );
 
   // Submit module-permission assignments (add or update)
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
-    const modulePermissions = userModulesPermissions.filter((mp) => mp.permissionIds.length !== 0);
-    console.log(modulePermissions)
+    const activePermissions = userModulesPermissions.filter(
+      (mp) => mp.permissionIds.length !== 0
+    );
 
     const payload = {
       data: {
-        userId: userId,
-        modulesPermissions: modulePermissions,
+        userId,
+        modulesPermissions: activePermissions,
       },
     };
 
     try {
-      // Check if user already has permissions to decide between add or update
-      const { response: checkResponse, status: checkStatus } =
-        await BackendRequest("/api/permissions/getUserPermissions", {
+      const { response, status } = await BackendRequest(
+        "/api/permissions/updateUserPermissions",
+        {
           method: "POST",
-          body: JSON.stringify({ data: { userId } }),
-        });
-
-      const hasExistingPermissions =
-        checkStatus === 200 &&
-        Array.isArray(checkResponse?.response?.data.userPermissions) &&
-        checkResponse.response.data.userPermissions.length > 0;
-
-      const endpoint = hasExistingPermissions
-        ? "/api/permissions/updateUserPermissions"
-        : "/api/permissions/addUserPermissions";
-
-      const { response, status } = await BackendRequest(endpoint, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (status === 201 || status === 200) {
-        showToast(
-          response?.response?.message || "Permissions updated successfully!",
-          "success"
-        );
+        showToast("Permissions updated and enforced successfully!", "success");
       } else {
         showToast(
           response?.response?.message || "Failed to update permissions.",
@@ -245,6 +285,8 @@ export const useAddUserPermissions = (userId: string) => {
     allModules,
     userModulesPermissions,
     togglePermission,
+    setModulePreset,
+    setGlobalPreset,
     handleSubmit,
     isSubmitting,
     isLoading,

@@ -1,188 +1,200 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { RetailDataTable, Column } from "@/components/ui/retail-data-table";
 import { useToast } from "@/context/toast-context";
-import UpdateTaxMaster from "../updateTaxMaster/updateTaxMaster";
-import editIcon from '../../../../icons/editIcon.png';
-import deleteIcon from '../../../../icons/deleteIcon.png';
-import Image from 'next/image';
+import { Edit2, Trash2, Percent, CheckCircle, XCircle } from "lucide-react";
 
 export interface TaxMaster {
   id: string;
-  createdOn: string;
-  modifiedOn: string;
-  createdBy: string;
-  modifiedBy: string;
-  active: boolean;
-  storeIds: string[];
+  storeIds?: string[];
   taxCode: string;
   taxType: string;
   taxPercentage: number | null;
   applicableOn: string;
-  applicableStateIds?: string[];
   applicableCategories?: string[];
   inclusionOnBasePrice: boolean;
-  description: string;
+  description?: string;
+  active: boolean;
 }
 
-const TaxMasterTable: React.FC = () => {
+export default function TaxMasterTable() {
   const [data, setData] = useState<TaxMaster[]>([]);
   const [loading, setLoading] = useState(true);
-  const [storeId, setStoreId] = useState<string | null>(null);
   const router = useRouter();
-  const showToast = useToast();
+  const { showToast } = useToast();
 
-  useEffect(() => {
+  const fetchTaxMasters = async () => {
+    setLoading(true);
     const cookieStoreId = Cookies.get("storeId");
-    setStoreId(cookieStoreId || null);
+    if (!cookieStoreId) {
+      setLoading(false);
+      return;
+    }
 
-    const fetchTaxMasters = async () => {
-      if (!cookieStoreId) {
-        console.warn("No storeId found in cookies.");
-        setLoading(false);
-        return;
-      }
+    try {
+      const response = await fetch("/api/masters/taxMaster/taxMasterByStoreId", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: { storeId: cookieStoreId } }),
+      });
 
-      try {
-        const response = await fetch("/api/masters/taxMaster/taxMasterByStoreId", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ data: { storeId: cookieStoreId } }),
-        });
-
-        const result = await response.json();
-        const taxData = result?.response?.data || [];
-        setData(taxData);
-      } catch (error) {
-        console.error("Error fetching tax masters:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTaxMasters();
-  }, []);
-
-  const addTaxMaster = () => {
-    if (storeId) {
-      router.push(`/masters/taxMaster/addTaxMaster?storeId=${storeId}`);
-    } else {
-      alert("Store ID is missing.");
+      const result = await response.json();
+      const taxData = result?.response?.data || result?.data || [];
+      setData(taxData);
+    } catch (error) {
+      console.error("Error fetching tax masters:", error);
+      showToast("Failed to fetch tax masters", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteTaxMaster = async (taxMasterId: string) => {
+  useEffect(() => {
+    fetchTaxMasters();
+  }, []);
+
+  const handleDelete = async (taxMasterId: string) => {
+    if (!window.confirm("Are you sure you want to delete this tax rule?")) return;
+
     try {
       const response = await fetch("/api/masters/taxMaster/deleteTaxMaster", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ data: { id: taxMasterId } }),
       });
 
       if (response.ok) {
-        setData((prev) => prev.filter((item) => item.id !== taxMasterId));
+        showToast("Tax master deleted successfully", "success");
+        fetchTaxMasters();
+      } else {
+        showToast("Failed to delete tax master", "error");
       }
     } catch (error) {
-      console.error("Error fetching tax masters:", error);
+      showToast("Error deleting tax master", "error");
     }
   };
 
-
-  if (loading) {
-    return <div className="text-purple-600">Loading tax masters...</div>;
-  }
-
-  function handleEditTaxMaster(id: string): void {
-    router.push(`/masters/taxMaster/updateTaxMaster/${id}`);
-  }
+  const columns: Column<TaxMaster>[] = [
+    {
+      key: "taxCode",
+      header: "Tax Code & Name",
+      sortable: true,
+      accessor: (item) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-slate-900 dark:text-neutral-100 flex items-center gap-1.5">
+            <Percent className="w-3.5 h-3.5 text-blue-500" />
+            {item.taxCode}
+          </span>
+          <span className="text-xs text-slate-400 dark:text-neutral-500">
+            {item.description || "General Tax Rate"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "taxType",
+      header: "Tax Regime",
+      sortable: true,
+      accessor: (item) => (
+        <span className="px-2 py-0.5 text-xs font-semibold rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+          {item.taxType || "GST"}
+        </span>
+      ),
+    },
+    {
+      key: "taxPercentage",
+      header: "Rate (%)",
+      sortable: true,
+      accessor: (item) => (
+        <span className="font-bold text-slate-900 dark:text-neutral-100 text-sm">
+          {item.taxPercentage !== null ? `${item.taxPercentage}%` : "0%"}
+        </span>
+      ),
+    },
+    {
+      key: "applicableOn",
+      header: "Applicable On",
+      sortable: true,
+      accessor: (item) => (
+        <span className="text-xs text-slate-700 dark:text-neutral-300">
+          {item.applicableOn || "Item"}
+        </span>
+      ),
+    },
+    {
+      key: "inclusionOnBasePrice",
+      header: "Inclusive Pricing",
+      accessor: (item) => (
+        <span
+          className={`px-2 py-0.5 text-xs font-medium rounded-full border ${
+            item.inclusionOnBasePrice
+              ? "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200"
+              : "bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300 border-slate-200 dark:border-neutral-700"
+          }`}
+        >
+          {item.inclusionOnBasePrice ? "Tax Included" : "Over Base Price"}
+        </span>
+      ),
+    },
+    {
+      key: "active",
+      header: "Status",
+      accessor: (item) => (
+        <span
+          className={`px-2 py-0.5 text-xs font-semibold rounded-full border ${
+            item.active
+              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+              : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border-rose-200 dark:border-rose-800"
+          }`}
+        >
+          {item.active ? "Active" : "Inactive"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      accessor: (item) => (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => router.push(`/masters/taxMaster/updateTaxMaster/${item.id}`)}
+            className="p-1.5 rounded-lg text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
+            title="Edit Tax Rate"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => handleDelete(item.id)}
+            className="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+            title="Delete Tax Rate"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="mt-10 overflow-x-auto bg-white shadow-md rounded-xl p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold text-purple-600">Tax Masters</h1>
-        <button
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-          onClick={addTaxMaster}
-        >
-          Add New Tax Master
-        </button>
-      </div>
-
-      {data.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">No tax master records found.</div>
-      ) : (
-        <table className="min-w-full text-sm text-left text-gray-800">
-          <thead className="bg-purple-500 text-white">
-            <tr>
-              <th className="px-4 py-2">S.No</th>
-              <th className="px-4 py-2">Tax Code</th>
-              <th className="px-4 py-2">Tax Type</th>
-              <th className="px-4 py-2">Percentage</th>
-              <th className="px-4 py-2">Applicable On</th>
-              <th className="px-4 py-2">Categories</th>
-              <th className="px-4 py-2">Included in Base Price</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Description</th>
-              <th className="px-4 py-2">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-purple-300">
-            {data.map((tax, index) => (
-              <tr key={tax.id} className="hover:bg-purple-100 transition">
-                <td className="px-4 py-2">{index + 1}</td>
-                <td className="px-4 py-2">{tax.taxCode}</td>
-                <td className="px-4 py-2">{tax.taxType}</td>
-                <td className="px-4 py-2">
-                  {tax.taxPercentage !== null ? `${tax.taxPercentage}%` : "-"}
-                </td>
-                <td className="px-4 py-2">{tax.applicableOn}</td>
-                <td className="px-4 py-2">
-                  {(tax.applicableCategories && tax.applicableCategories.length > 0)
-                    ? tax.applicableCategories.join(", ")
-                    : "-"}
-                </td>
-                <td className="px-4 py-2">{tax.inclusionOnBasePrice ? "Yes" : "No"}</td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${tax.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {tax.active ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td className="px-4 py-2">{tax.description || "-"}</td>
-                <td className="px-4 py-2 grid grid-cols-1">
-                  <div className="flex gap-2">
-                    {/* Edit Icon with Hover Label */}
-                      <div className="relative group">
-                        <Image src={editIcon} alt="Edit icon" width={25} height={25}
-                          onClick={() => handleEditTaxMaster(tax.id)}
-                          className="hover:scale-120 transition-transform" />
-                        <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                          Edit
-                        </div>
-                    </div>
-
-                    {/* Details Icon with Hover Label */}
-                    <div className="relative group">
-                      <Image src={deleteIcon} alt="Details icon" width={25} height={25}
-                        onClick={() => deleteTaxMaster(tax.id)}
-                        className="hover:scale-120 transition-transform" />
-                      <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-5 group-hover:opacity-500">
-                        Delete
-                      </div>
-                    </div>
-                  </div>
-                  </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="space-y-4">
+      <RetailDataTable
+        title="Tax Master (GST & VAT)"
+        subtitle="Configure Indian GST slab rates (CGST, SGST, IGST), inclusive tax computation, and HSN rate mappings"
+        data={data}
+        columns={columns}
+        loading={loading}
+        onRefresh={fetchTaxMasters}
+        onAddNew={() => {
+          const storeId = Cookies.get("storeId");
+          router.push(`/masters/taxMaster/addTaxMaster?storeId=${storeId || ""}`);
+        }}
+        addNewLabel="Add Tax Rate"
+        searchPlaceholder="Search tax by code, type, or description..."
+        searchFields={["taxCode", "taxType", "description"]}
+      />
     </div>
   );
-};
-
-export default TaxMasterTable;
+}

@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/context/toast-context";
 import { AuthProvider } from "@/context/authContext";
+import { PermissionsProvider } from "@/context/permissionsContext";
 import { SidebarProvider } from "@/context/sidebar-context";
 import LayoutShell from "@/components/layout/layout-shell";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -29,10 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           <ToastProvider>
             <AuthProvider>
-              <SidebarProvider>
-                <LayoutShell>{children}</LayoutShell>
-                <SessionTimeoutModal />
-              </SidebarProvider>
+              <PermissionsProvider>
+                <SidebarProvider>
+                  <LayoutShell>{children}</LayoutShell>
+                  <SessionTimeoutModal />
+                </SidebarProvider>
+              </PermissionsProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

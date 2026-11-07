@@ -68,19 +68,19 @@ export const useAllUsers = () => {
     };
 
     try {
-      const { response, status } = await BackendRequest('api/all-users', {
+      const { response, status } = await BackendRequest('/api/all-users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (status === 200 || response?.response?.statusCode === 200) {
-        setUsers(response?.response?.data || []);
+        setUsers(response?.response?.data || response?.data || []);
       } else {
-        showToast('Failed to fetch users');
+        showToast('Failed to fetch users', 'error');
       }
     } catch (err) {
-      showToast('Something went wrong');
+      showToast('Something went wrong while fetching users', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -106,13 +106,13 @@ export const useAllUsers = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    await fetchUsers(formData);
+    fetchUsers(formData);
   };
 
   useEffect(() => {
-    fetchUsers(); // Fetch on initial load
+    fetchUsers();
   }, []);
 
   return {
@@ -121,5 +121,6 @@ export const useAllUsers = () => {
     handleChange,
     handleSubmit,
     isSubmitting,
+    fetchUsers,
   };
 };

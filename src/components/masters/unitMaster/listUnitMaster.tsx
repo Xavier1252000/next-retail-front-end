@@ -1,70 +1,52 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { BackendRequest } from '@/utils/request-Interceptor/Interceptor';
-import { useToast } from '@/context/toast-context';
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
-import editIcon from '../../../icons/editIcon.png';
-import Image from 'next/image';
+import React, { useEffect, useState } from "react";
+import { BackendRequest } from "@/utils/request-Interceptor/Interceptor";
+import { useToast } from "@/context/toast-context";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
+import { RetailDataTable, Column } from "@/components/ui/retail-data-table";
+import { Scale, Edit2 } from "lucide-react";
 
-interface UnitData {
+export interface UnitData {
   id: string;
   unit: string;
   unitNotation: string;
   active: boolean;
 }
 
-const AllUnitMasters: React.FC = () => {
+export default function AllUnitMasters() {
   const [units, setUnits] = useState<UnitData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
 
-  // creating payload with storeId while for staff
-  const userRoles = Cookies.get("userRoles");
-  let roles: string[] = [];
-
-  try {
-    roles = JSON.parse(userRoles || "[]");
-  } catch (err) {
-    console.error("Error parsing userRoles:", err);
-  }
-
-  let payload = {}
-
-  if (roles.includes("STAFF")) {
-    const storeId = Cookies.get("storeId");
-    payload = {
-      data: {
-        storeIds: [storeId]
-      }
-    };
-  } else {
-    payload = {
-      data: {
-        storeIds: []
-      }
-    }
-  }
-
   const fetchUnits = async () => {
     setIsLoading(true);
-    try {
-      const { response, status } = await BackendRequest('/api/masters/unitMaster/getUnitMaster', {
-        method: 'POST',
-        headers: {
-        },
-        body: JSON.stringify(payload)
-      });
+    const storeId = Cookies.get("storeId");
+    const payload = {
+      data: {
+        storeIds: storeId ? [storeId] : [],
+      },
+    };
 
-      if (status === 200 && response?.response?.statusCode === 200) {
-        setUnits(response?.response?.data || []);
+    try {
+      const { response, status } = await BackendRequest(
+        "/api/masters/unitMaster/getUnitMaster",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (status === 200) {
+        setUnits(response?.response?.data || response?.data || []);
       } else {
-        showToast('Failed to fetch units');
+        setUnits([]);
       }
     } catch (error) {
-      showToast('Something went wrong while fetching units');
+      console.error("Error fetching units:", error);
+      showToast("Something went wrong while fetching units", "error");
     } finally {
       setIsLoading(false);
     }
@@ -74,134 +56,102 @@ const AllUnitMasters: React.FC = () => {
     fetchUnits();
   }, []);
 
-  const handleAddNewUnit = () => {
-    router.push("/masters/unitMaster/addUnitMaster");
-  }
-
-  function editUnit(unitMasterId: string): void {
-    router.push("/masters/unitMaster/updateUnitMaster/" + unitMasterId);
-  }
-
-
-  async function changeUnitStatus(id: string) {
-    const unit = units.find(u => u.id === id);
+  const changeUnitStatus = async (id: string) => {
+    const unit = units.find((u) => u.id === id);
     if (!unit) return;
 
     try {
-      const { response, status } = await BackendRequest('/api/masters/unitMaster/unitMasterStatusChange/' + id, {
-        method: 'GET',
-        headers: {}
-      });
+      const { response, status } = await BackendRequest(
+        `/api/masters/unitMaster/unitMasterStatusChange/${id}`,
+        { method: "GET" }
+      );
 
-      if (status === 200 && response?.response?.statusCode === 200) {
-        const updatedUnit = response.response.data;
-
-        // Replace the old unit with the updated one
-        setUnits(prevUnits =>
-          prevUnits.map(u => u.id === id ? updatedUnit : u)
-        );
-
-        showToast('Status updated successfully', "success");
+      if (status === 200) {
+        showToast("Status updated successfully", "success");
+        fetchUnits();
       } else {
-        showToast('Failed to change status', "error");
+        showToast("Failed to change status", "error");
       }
     } catch (error) {
-      showToast('Something went wrong', "error");
+      showToast("Something went wrong", "error");
     }
-  }
+  };
 
+  const columns: Column<UnitData>[] = [
+    {
+      key: "unit",
+      header: "Unit of Measure",
+      sortable: true,
+      accessor: (item) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-slate-900 dark:text-neutral-100 flex items-center gap-1.5">
+            <Scale className="w-3.5 h-3.5 text-blue-500" />
+            {item.unit}
+          </span>
+          <span className="text-xs text-slate-400 dark:text-neutral-500">
+            Standard retail measure
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "unitNotation",
+      header: "Symbol / Abbreviation",
+      sortable: true,
+      accessor: (item) => (
+        <span className="px-2.5 py-0.5 text-xs font-mono font-bold rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+          {item.unitNotation}
+        </span>
+      ),
+    },
+    {
+      key: "active",
+      header: "Status Toggle",
+      accessor: (item) => (
+        <button
+          onClick={() => changeUnitStatus(item.id)}
+          className={`px-3 py-1 text-xs font-semibold rounded-full border cursor-pointer transition-all ${
+            item.active
+              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100"
+              : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:bg-rose-100"
+          }`}
+          title="Click to toggle active status"
+        >
+          {item.active ? "Active" : "Inactive"}
+        </button>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      accessor: (item) => (
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => router.push(`/masters/unitMaster/updateUnitMaster/${item.id}`)}
+            className="p-1.5 rounded-lg text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
+            title="Edit Unit"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="mt-10 overflow-x-auto bg-white shadow-md rounded-xl p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold text-purple-600">Unit Masters</h1>
-        <button
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-          onClick={handleAddNewUnit}
-        >
-          Add New Unit
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div className="text-center text-gray-500 py-10">Loading units...</div>
-      ) : units.length === 0 ? (
-        <div className="text-center text-gray-500 py-10">No unit master records found.</div>
-      ) : (
-        <table className="min-w-full text-sm text-left text-gray-800">
-          <thead className="bg-purple-500 text-white">
-            <tr>
-              <th className="px-4 py-2">S.No</th>
-              <th className="px-4 py-2">Unit Name</th>
-              <th className="px-4 py-2">Unit Notation</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-purple-300">
-            {units.map((unit, index) => (
-              <tr key={unit.id} className="hover:bg-purple-100 transition">
-                <td className="px-4 py-2">{index + 1}</td>
-                <td className="px-4 py-2">{unit.unit}</td>
-                <td className="px-4 py-2">{unit.unitNotation}</td>
-                <td className="px-4 py-2">
-                  <div className="flex gap-2">
-                    {/* Edit Icon with Hover Label */}
-                    <div className="relative group cursor-pointer">
-                      <Image
-                        src={editIcon}
-                        alt="Edit icon"
-                        width={25}
-                        height={25}
-                        onClick={() => editUnit(unit.id)}
-                        className="hover:scale-110 transition-transform"
-                      />
-                      <div className="z-10 absolute left-1/2 -translate-x-1/2 top-full mt-1 text-xs bg-white px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
-                        Edit
-                      </div>
-                    </div>
-
-
-                    {/* Toggle Active/Inactive Button */}
-<div className="flex items-center gap-2">
-  <label className="relative inline-flex items-center cursor-pointer">
-    <input
-      type="checkbox"
-      checked={unit.active}
-      onChange={() => changeUnitStatus(unit.id)}
-      className="sr-only peer"
-      // aria-label="Toggle Active Status"
-    />
-    <div className="w-11 h-6 bg-gray-300 rounded-full peer-checked:bg-purple-600 transition-colors duration-300 relative">
-      {/* Movable circle */}
-      <div
-        className="
-          absolute top-0.5 left-0.5
-          bg-white w-5 h-5 rounded-full shadow-md
-          transform transition-transform duration-300
-          peer-checked:translate-x-5
-        "
+    <div className="space-y-4">
+      <RetailDataTable
+        title="Units of Measure Master"
+        subtitle="Manage inventory packaging units (Pieces, Boxes, Kilograms, Liters, Meters) and abbreviations"
+        data={units}
+        columns={columns}
+        loading={isLoading}
+        onRefresh={fetchUnits}
+        onAddNew={() => router.push("/masters/unitMaster/addUnitMaster")}
+        addNewLabel="Add Unit"
+        searchPlaceholder="Search unit name or abbreviation..."
+        searchFields={["unit", "unitNotation"]}
       />
     </div>
-    <span className="ml-3 text-sm font-medium text-gray-900">
-      {unit.active ? 'Active' : 'Inactive'}
-    </span>
-  </label>
-</div>
-
-
-
-
-
-                  </div>
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
   );
-};
-
-export default AllUnitMasters;
+}

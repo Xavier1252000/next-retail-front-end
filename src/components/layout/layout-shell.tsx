@@ -14,19 +14,20 @@ export default function LayoutShell({ children }: { children: ReactNode }) {
     <div className="flex h-screen overflow-hidden bg-background text-foreground transition-colors duration-200">
       {/* Sidebar only if logged in */}
       {isLoggedIn && (
-        <div
-          className={`transition-all duration-300 shrink-0 ${
-            isOpen ? "w-60" : "w-16"
-          }`}
-        >
+        <>
+          <div
+            className={`hidden md:block transition-all duration-300 shrink-0 ${
+              isOpen ? "w-60" : "w-16"
+            }`}
+          />
           <Sidebar />
-        </div>
+        </>
       )}
 
       {/* Main Content */}
       <div className="flex flex-col flex-grow overflow-auto min-w-0">
         <NavbarDemo />
-        <main className="pt-16 p-4 md:p-6 flex-grow">{children}</main>
+        <main className="pt-16 p-3 md:p-6 flex-grow">{children}</main>
       </div>
     </div>
   );

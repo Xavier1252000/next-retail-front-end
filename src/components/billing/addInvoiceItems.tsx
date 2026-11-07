@@ -639,9 +639,101 @@ export default function AddInvoiceItems() {
         </div>
       </div>
 
-      {/* Main Billing Table */}
+      {/* Main Billing: Responsive - Cards on Mobile, Table on Desktop */}
       <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile View: Cards Layout */}
+        <div className="block md:hidden divide-y divide-border">
+          {invoiceItems.length > 0 ? (
+            invoiceItems.map((item, index) => (
+              <div key={item.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-semibold">
+                        #{index + 1}
+                      </span>
+                      <h4 className="font-semibold text-sm text-foreground leading-tight">
+                        {item.itemName}
+                      </h4>
+                    </div>
+                    <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+                      <span>SKU: {item.skuCode}</span>
+                      {item.barcode && <span>• Barcode: {item.barcode}</span>}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item.id)}
+                    className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 bg-muted/40 p-2.5 rounded-xl text-xs">
+                  <div>
+                    <span className="text-muted-foreground block text-[10px]">Unit Price</span>
+                    <span className="font-mono font-medium text-foreground">₹{item.baseSellingPrice.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px]">Tax</span>
+                    <span className="font-mono text-foreground">₹{item.totalTaxPrice.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px]">Disc</span>
+                    <span className="font-mono text-foreground">₹{item.totalDiscountPrice.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  {/* Quantity Stepper */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDecrement(item.id)}
+                      className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted active:scale-95 transition-all text-foreground"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => handleQuantityInput(item.id, e.target.value)}
+                      className="w-12 text-center py-1 font-semibold text-sm bg-background border border-input rounded-lg outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleIncrement(item.id)}
+                      className="p-1.5 rounded-lg border border-border bg-background hover:bg-muted active:scale-95 transition-all text-foreground"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Line Total */}
+                  <div className="text-right">
+                    <span className="text-[10px] text-muted-foreground block">Line Total</span>
+                    <span className="font-mono font-bold text-base text-foreground">
+                      ₹{item.finalPrice.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-10 text-center text-muted-foreground px-4">
+              <ShoppingCart className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm font-medium">Cart is empty</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Scan barcode or search products to begin
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop View: Full Table Layout */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-muted/50 border-b border-border text-muted-foreground font-medium text-xs uppercase tracking-wider">
               <tr>
@@ -759,7 +851,6 @@ export default function AddInvoiceItems() {
           </table>
         </div>
       </div>
-
       {/* Checkout Summary Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Payment & Delivery options */}

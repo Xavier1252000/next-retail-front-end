@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ChevronDown,
   Menu,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useSidebar } from "@/context/sidebar-context";
@@ -88,7 +89,7 @@ const DEFAULT_RETAIL_MODULES: HeadModule[] = [
 ];
 
 export default function Sidebar() {
-  const { isOpen: isSidebarOpen, toggle } = useSidebar();
+  const { isOpen: isSidebarOpen, toggle, close } = useSidebar();
   const { can, isSuperAdminOrClient, userPermissions: rawPermissions, loading } = useUserAccess();
   const [userPermissions, setUserPermissions] = useState<HeadModule[]>([]);
   const [openModules, setOpenModules] = useState<{ [key: string]: boolean }>({});
@@ -130,31 +131,55 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="fixed top-14 left-0 h-[calc(100vh-56px)] z-40 transition-colors duration-200">
-      {/* Sidebar Toggle Button */}
-      <button
-        onClick={toggle}
-        className="absolute top-4 left-4 z-50 p-2 bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg shadow-sm transition-colors cursor-pointer"
-        aria-label="Toggle Sidebar"
-      >
-        <Menu size={18} />
-      </button>
+    <>
+      {/* Mobile Dim Overlay - Closes on Click Outside */}
+      {isSidebarOpen && (
+        <div
+          onClick={close}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden"
+        />
+      )}
 
-      {/* Sidebar */}
       <div
-        className={`${
-          isSidebarOpen ? "w-60" : "w-16"
-        } transition-all duration-300 overflow-hidden bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100 h-full p-4 shadow-sm flex flex-col`}
+        className={`fixed top-14 left-0 h-[calc(100vh-56px)] z-50 transition-all duration-300 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
       >
-        {/* Logo / Header space */}
-        <div className="flex items-center gap-2 px-2 mb-6">
-          <LayoutDashboard className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
-          {isSidebarOpen && (
-            <span className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
-              Navigation
-            </span>
-          )}
-        </div>
+        {/* Desktop Toggle Button */}
+        <button
+          onClick={toggle}
+          className="absolute top-4 left-4 z-50 p-2 hidden md:flex bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 rounded-lg shadow-sm transition-colors cursor-pointer"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu size={18} />
+        </button>
+
+        {/* Sidebar */}
+        <div
+          className={`${
+            isSidebarOpen ? "w-64" : "w-0 md:w-16"
+          } transition-all duration-300 overflow-hidden bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-neutral-100 h-full p-4 shadow-xl md:shadow-sm flex flex-col`}
+        >
+          {/* Logo / Header space + Mobile Close Button */}
+          <div className="flex items-center justify-between px-2 mb-6">
+            <div className="flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+              {isSidebarOpen && (
+                <span className="text-sm font-semibold tracking-wide text-neutral-600 dark:text-neutral-400 uppercase">
+                  Navigation
+                </span>
+              )}
+            </div>
+
+            {/* Mobile Close Button */}
+            <button
+              onClick={close}
+              className="md:hidden p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
 
         {/* Modules */}
         <ul className="flex-1 space-y-1 overflow-y-auto">
@@ -231,5 +256,6 @@ export default function Sidebar() {
         </div>
       </div>
     </div>
+    </>
   );
 }
